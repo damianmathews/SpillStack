@@ -15,7 +15,7 @@ import {
 
 // Configure Google Sign-In
 GoogleSignin.configure({
-  iosClientId: "732563511222-fj1fqguutuk88a8nb7ebasnj7pir5ldt.apps.googleusercontent.com",
+  iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
 });
 
 const AuthContext = createContext({});
