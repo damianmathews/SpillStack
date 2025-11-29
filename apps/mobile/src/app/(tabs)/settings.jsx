@@ -19,20 +19,58 @@ import {
   HelpCircle,
   ChevronRight,
   Sparkles,
+  LogOut,
 } from "lucide-react-native";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useFirebaseAuth } from "@/contexts/AuthContext";
 import * as Haptics from "expo-haptics";
+import { toast } from "sonner-native";
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { theme, isDark, toggleTheme } = useTheme();
+  const { signOut, user } = useFirebaseAuth();
 
   const handleToggleTheme = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     toggleTheme();
   };
 
+  const handleSignOut = () => {
+    Alert.alert(
+      "Sign Out",
+      "Are you sure you want to sign out?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Sign Out",
+          style: "destructive",
+          onPress: async () => {
+            const { error } = await signOut();
+            if (error) {
+              toast.error(error);
+            } else {
+              toast.success("Signed out successfully");
+            }
+          },
+        },
+      ],
+    );
+  };
+
   const settingSections = [
+    {
+      title: "Account",
+      items: [
+        {
+          icon: LogOut,
+          title: "Sign Out",
+          subtitle: user?.email || "Sign out of your account",
+          type: "danger",
+          onPress: handleSignOut,
+        },
+      ],
+    },
     {
       title: "Appearance",
       items: [

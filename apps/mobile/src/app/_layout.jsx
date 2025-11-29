@@ -1,54 +1,70 @@
-import { useAuth } from "@/utils/auth/useAuth";
-import { Stack } from "expo-router";
+import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { AuthProvider, useFirebaseAuth } from "@/contexts/AuthContext";
 
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      cacheTime: 1000 * 60 * 30, // 30 minutes
+      staleTime: 1000 * 60 * 5,
+      cacheTime: 1000 * 60 * 30,
       retry: 1,
       refetchOnWindowFocus: false,
     },
   },
 });
 
-export default function RootLayout() {
-  const { initiate, isReady } = useAuth();
+function RootLayoutNav() {
+  const { user, loading } = useFirebaseAuth();
+  const router = useRouter();
+  const segments = useSegments();
 
   useEffect(() => {
-    initiate();
-  }, [initiate]);
+    if (loading) return;
+
+    const inAuthGroup = segments[0] === "auth";
+
+    if (!user && !inAuthGroup) {
+      router.replace("/auth");
+    } else if (user && inAuthGroup) {
+      router.replace("/(tabs)");
+    }
+  }, [user, loading, segments]);
 
   useEffect(() => {
-    if (isReady) {
+    if (!loading) {
       SplashScreen.hideAsync();
     }
-  }, [isReady]);
+  }, [loading]);
 
-  if (!isReady) {
+  if (loading) {
     return null;
   }
 
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="auth" />
+        <Stack.Screen name="(tabs)" />
+      </Stack>
+    </GestureHandlerRootView>
+  );
+}
+
+export default function RootLayout() {
+  return (
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>
         <ThemeProvider>
-          <GestureHandlerRootView style={{ flex: 1 }}>
-            <Stack
-              screenOptions={{ headerShown: false }}
-              initialRouteName="(tabs)"
-            >
-              <Stack.Screen name="(tabs)" />
-            </Stack>
-          </GestureHandlerRootView>
+          <AuthProvider>
+            <RootLayoutNav />
+          </AuthProvider>
         </ThemeProvider>
       </SafeAreaProvider>
     </QueryClientProvider>

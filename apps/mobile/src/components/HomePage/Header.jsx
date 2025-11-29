@@ -2,9 +2,14 @@ import React from "react";
 import { View, Text, TextInput } from "react-native";
 import { Search } from "lucide-react-native";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useFirebaseAuth } from "@/contexts/AuthContext";
 
 export function Header({ insets, searchQuery, onSearchChange, title = "Ideas" }) {
   const { theme } = useTheme();
+  const { user } = useFirebaseAuth();
+
+  // Get first name from display name (Google accounts have full name)
+  const firstName = user?.displayName?.split(' ')[0] || 'there';
 
   return (
     <View
@@ -15,6 +20,17 @@ export function Header({ insets, searchQuery, onSearchChange, title = "Ideas" })
         backgroundColor: theme.colors.background,
       }}
     >
+      {/* Welcome Message */}
+      <Text
+        style={{
+          fontSize: 14,
+          color: theme.colors.textSecondary,
+          marginBottom: 4,
+        }}
+      >
+        Welcome back, {firstName}
+      </Text>
+
       {/* Title */}
       <Text
         style={{

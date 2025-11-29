@@ -1,7 +1,6 @@
 import { Tabs } from "expo-router";
 import { Lightbulb, CheckCircle, Settings } from "lucide-react-native";
 import { useTheme } from "@/contexts/ThemeContext";
-import { View } from "react-native";
 import { BlurView } from "expo-blur";
 
 export default function TabLayout() {
@@ -50,13 +49,11 @@ export default function TabLayout() {
         options={{
           title: "Ideas",
           tabBarIcon: ({ color, focused }) => (
-            <View style={{ opacity: focused ? 1 : 0.7 }}>
-              <Lightbulb
-                color={color}
-                size={24}
-                fill={focused ? color : "transparent"}
-              />
-            </View>
+            <Lightbulb
+              color={color}
+              size={24}
+              strokeWidth={focused ? 2.5 : 2}
+            />
           ),
         }}
       />
@@ -65,13 +62,11 @@ export default function TabLayout() {
         options={{
           title: "Tasks",
           tabBarIcon: ({ color, focused }) => (
-            <View style={{ opacity: focused ? 1 : 0.7 }}>
-              <CheckCircle
-                color={color}
-                size={24}
-                fill={focused ? color : "transparent"}
-              />
-            </View>
+            <CheckCircle
+              color={color}
+              size={24}
+              strokeWidth={focused ? 2.5 : 2}
+            />
           ),
         }}
       />
@@ -86,12 +81,11 @@ export default function TabLayout() {
         options={{
           title: "Settings",
           tabBarIcon: ({ color, focused }) => (
-            <View style={{ opacity: focused ? 1 : 0.7 }}>
-              <Settings
-                color={color}
-                size={24}
-              />
-            </View>
+            <Settings
+              color={color}
+              size={24}
+              strokeWidth={focused ? 2.5 : 2}
+            />
           ),
         }}
       />
