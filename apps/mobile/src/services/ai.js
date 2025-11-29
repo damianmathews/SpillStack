@@ -208,10 +208,100 @@ export async function generateTitle(content) {
   }
 }
 
+/**
+ * Find similar ideas based on content comparison
+ */
+export async function findSimilarIdeas(currentIdea, allIdeas) {
+  // Filter out the current idea
+  const otherIdeas = allIdeas.filter((idea) => idea.id !== currentIdea.id);
+
+  if (otherIdeas.length === 0) {
+    return [];
+  }
+
+  // Create a prompt with the current idea and list of other ideas
+  const otherIdeasText = otherIdeas
+    .map((idea, i) => `${i + 1}. [${idea.id}] ${idea.title}: ${idea.summary || idea.content.substring(0, 100)}`)
+    .join("\n");
+
+  const prompt = `You are an expert at finding thematic connections between ideas.
+
+Given the CURRENT IDEA and a LIST OF OTHER IDEAS, identify which ideas are most similar or related.
+
+CURRENT IDEA:
+Title: ${currentIdea.title}
+Content: ${currentIdea.content}
+Category: ${currentIdea.category}
+
+LIST OF OTHER IDEAS:
+${otherIdeasText}
+
+Return ONLY a JSON array of the IDs of the most similar ideas (max 3), ordered by relevance.
+Example: ["sample-1", "sample-3"]
+
+If no ideas are similar, return an empty array: []
+Return ONLY the JSON array, nothing else.`;
+
+  try {
+    const response = await callOpenAI(prompt, "", { maxTokens: 100 });
+    // Parse the JSON array
+    const parsed = JSON.parse(response.trim());
+    if (Array.isArray(parsed)) {
+      return parsed.slice(0, 3);
+    }
+    return [];
+  } catch (e) {
+    console.warn("Similar ideas lookup failed:", e.message);
+    return [];
+  }
+}
+
+/**
+ * Check if two ideas might be duplicates
+ */
+export async function checkDuplicate(newIdeaContent, existingIdeas) {
+  if (existingIdeas.length === 0) {
+    return { isDuplicate: false, similarTo: null };
+  }
+
+  const existingText = existingIdeas
+    .map((idea, i) => `${i + 1}. [${idea.id}] ${idea.title}: ${idea.summary || idea.content.substring(0, 100)}`)
+    .join("\n");
+
+  const prompt = `You are checking if a new idea is a duplicate of existing ideas.
+
+NEW IDEA:
+${newIdeaContent}
+
+EXISTING IDEAS:
+${existingText}
+
+If the new idea is essentially the same as an existing idea (same core concept, just worded differently), return the ID of that idea.
+If it's similar but distinct, or completely different, return "none".
+
+Return ONLY the ID or "none", nothing else.`;
+
+  try {
+    const response = await callOpenAI(prompt, "", { maxTokens: 50 });
+    const result = response.trim().replace(/['"]/g, "");
+
+    if (result === "none" || result === "") {
+      return { isDuplicate: false, similarTo: null };
+    }
+
+    return { isDuplicate: true, similarTo: result };
+  } catch (e) {
+    console.warn("Duplicate check failed:", e.message);
+    return { isDuplicate: false, similarTo: null };
+  }
+}
+
 export default {
   processIdea,
   cleanupTranscription,
   extractTasks,
   generateSummary,
   generateTitle,
+  findSimilarIdeas,
+  checkDuplicate,
 };

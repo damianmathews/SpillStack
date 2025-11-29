@@ -7,20 +7,25 @@ import {
   Animated,
   StyleSheet,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
-import { X, Mic, Square, Check, RefreshCw } from "lucide-react-native";
+import { X, Mic, Square, Check, RefreshCw, AlertTriangle, GitMerge } from "lucide-react-native";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useVoiceRecording } from "@/hooks/useVoiceRecording";
-import { useCreateIdea } from "@/hooks/useCreateIdea";
+import { useCreateIdea, getStoredIdeas } from "@/hooks/useCreateIdea";
+import { checkDuplicate } from "@/services/ai";
+import { sampleIdeas } from "@/data/sampleData";
+import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 
 export function VoiceModal({ visible, onClose }) {
   const { theme, isDark } = useTheme();
   const insets = useSafeAreaInsets();
-  const [stage, setStage] = useState("idle"); // idle, recording, processing, preview
+  const [stage, setStage] = useState("idle"); // idle, recording, processing, preview, duplicate
   const [ideaData, setIdeaData] = useState(null); // Full AI-processed data
+  const [duplicateIdea, setDuplicateIdea] = useState(null); // If duplicate found
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const waveAnims = useRef([...Array(5)].map(() => new Animated.Value(0.3))).current;
@@ -33,9 +38,29 @@ export function VoiceModal({ visible, onClose }) {
 
   const createIdeaMutation = useCreateIdea(handleSuccess);
 
-  const handleTranscriptionComplete = (data) => {
+  const handleTranscriptionComplete = async (data) => {
     // data includes: content, title, summary, category, tags, source_url
     setIdeaData(data);
+
+    // Check for duplicates
+    try {
+      const localIdeas = await getStoredIdeas();
+      const allIdeas = [...localIdeas, ...sampleIdeas];
+      const { isDuplicate, similarTo } = await checkDuplicate(data.content, allIdeas);
+
+      if (isDuplicate && similarTo) {
+        const existing = allIdeas.find((i) => i.id === similarTo);
+        if (existing) {
+          setDuplicateIdea(existing);
+          setStage("duplicate");
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn("Duplicate check failed:", e);
+    }
+
     setStage("preview");
   };
 
@@ -120,6 +145,20 @@ export function VoiceModal({ visible, onClose }) {
   const resetState = () => {
     setStage("idle");
     setIdeaData(null);
+    setDuplicateIdea(null);
+  };
+
+  const handleViewExisting = () => {
+    // Navigate to the existing duplicate idea
+    onClose();
+    resetState();
+    router.push(`/idea/${duplicateIdea.id}`);
+  };
+
+  const handleSaveAnyway = () => {
+    // Save the new idea despite being similar
+    setDuplicateIdea(null);
+    setStage("preview");
   };
 
   const handleClose = () => {
@@ -346,6 +385,76 @@ export function VoiceModal({ visible, onClose }) {
                 </View>
               </View>
             )}
+
+            {/* Duplicate Detection State */}
+            {stage === "duplicate" && duplicateIdea && (
+              <View style={styles.previewContainer}>
+                {/* Warning Icon */}
+                <View style={[styles.duplicateIcon, { backgroundColor: `${theme.colors.warning}20` }]}>
+                  <AlertTriangle size={32} color={theme.colors.warning} />
+                </View>
+
+                <Text style={[styles.duplicateTitle, { color: theme.colors.text }]}>
+                  Similar Idea Found
+                </Text>
+                <Text style={[styles.duplicateSubtext, { color: theme.colors.textSecondary }]}>
+                  This looks like something you've already captured
+                </Text>
+
+                {/* Existing Idea Card */}
+                <View
+                  style={[
+                    styles.previewCard,
+                    {
+                      backgroundColor: theme.colors.card,
+                      borderColor: theme.colors.warning,
+                      borderWidth: 2,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.previewLabel, { color: theme.colors.warning }]}>
+                    Existing Idea
+                  </Text>
+                  <Text style={[styles.existingTitle, { color: theme.colors.text }]}>
+                    {duplicateIdea.title}
+                  </Text>
+                  <Text style={[styles.existingContent, { color: theme.colors.textSecondary }]} numberOfLines={3}>
+                    {duplicateIdea.summary || duplicateIdea.content}
+                  </Text>
+                </View>
+
+                {/* Action Buttons */}
+                <View style={styles.actionButtons}>
+                  <TouchableOpacity
+                    style={[
+                      styles.actionButton,
+                      styles.secondaryButton,
+                      { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+                    ]}
+                    onPress={handleSaveAnyway}
+                  >
+                    <GitMerge size={20} color={theme.colors.text} />
+                    <Text style={[styles.actionButtonText, { color: theme.colors.text }]}>
+                      Save Anyway
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.actionButton,
+                      styles.primaryButton,
+                      { backgroundColor: theme.colors.primary },
+                    ]}
+                    onPress={handleViewExisting}
+                  >
+                    <Check size={20} color="#FFFFFF" />
+                    <Text style={[styles.actionButtonText, { color: "#FFFFFF" }]}>
+                      View Existing
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
           </View>
         </View>
       </BlurView>
@@ -497,5 +606,35 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 16,
     fontWeight: "600",
+  },
+  // Duplicate detection styles
+  duplicateIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "center",
+    marginBottom: 16,
+  },
+  duplicateTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  duplicateSubtext: {
+    fontSize: 15,
+    textAlign: "center",
+    marginBottom: 24,
+  },
+  existingTitle: {
+    fontSize: 17,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  existingContent: {
+    fontSize: 15,
+    lineHeight: 22,
   },
 });

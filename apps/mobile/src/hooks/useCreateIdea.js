@@ -75,5 +75,71 @@ export function useCreateIdea(onSuccess) {
   });
 }
 
-// Export helper for use in other components
-export { getStoredIdeas, STORAGE_KEY };
+// Hook for updating an idea
+export function useUpdateIdea(onSuccess) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, updates }) => {
+      const existingIdeas = await getStoredIdeas();
+      const index = existingIdeas.findIndex((idea) => idea.id === id);
+
+      if (index === -1) {
+        throw new Error("Idea not found");
+      }
+
+      const updatedIdea = {
+        ...existingIdeas[index],
+        ...updates,
+        updated_at: new Date().toISOString(),
+      };
+
+      existingIdeas[index] = updatedIdea;
+      await saveStoredIdeas(existingIdeas);
+
+      return updatedIdea;
+    },
+    onSuccess: (updatedIdea) => {
+      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      queryClient.invalidateQueries({ queryKey: ["localIdeas"] });
+      queryClient.invalidateQueries({ queryKey: ["idea", updatedIdea.id] });
+
+      if (onSuccess) {
+        onSuccess(updatedIdea);
+      }
+    },
+    onError: (error) => {
+      console.error("Update idea error:", error);
+      Alert.alert("Error", "Failed to update idea. Please try again.");
+    },
+  });
+}
+
+// Hook for deleting an idea
+export function useDeleteIdea(onSuccess) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id) => {
+      const existingIdeas = await getStoredIdeas();
+      const filteredIdeas = existingIdeas.filter((idea) => idea.id !== id);
+      await saveStoredIdeas(filteredIdeas);
+      return id;
+    },
+    onSuccess: (deletedId) => {
+      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      queryClient.invalidateQueries({ queryKey: ["localIdeas"] });
+
+      if (onSuccess) {
+        onSuccess(deletedId);
+      }
+    },
+    onError: (error) => {
+      console.error("Delete idea error:", error);
+      Alert.alert("Error", "Failed to delete idea. Please try again.");
+    },
+  });
+}
+
+// Export helpers for use in other components
+export { getStoredIdeas, saveStoredIdeas, STORAGE_KEY };
