@@ -1,11 +1,15 @@
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { Clock, Eye, CheckSquare, Square } from "lucide-react-native";
+import { Clock, Eye, Mic, Type, Link } from "lucide-react-native";
+import { useTheme } from "@/contexts/ThemeContext";
+import * as Haptics from "expo-haptics";
 
-export function IdeaCard({ idea, categoryColor, theme }) {
+export function IdeaCard({ idea }) {
+  const { theme } = useTheme();
+
   const handlePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push(`/idea/${idea.id}`);
   };
 
@@ -28,86 +32,93 @@ export function IdeaCard({ idea, categoryColor, theme }) {
     }
   };
 
-  const getCategoryGradient = (category) => {
+  const getCategoryColor = (category) => {
     const categoryMap = {
-      Ideas: theme.gradients.primary,
-      Learning: theme.gradients.cool,
-      Projects: theme.gradients.accent,
-      Inspiration: theme.gradients.warm,
-      Research: theme.gradients.secondary,
-      Personal: theme.gradients.primary,
-      "To Do": ["#FF6B6B", "#FF8E8E"],
-      "Business Ideas": ["#4ECDC4", "#6EDDD6"],
-      "Life Hacks": ["#45B7D1", "#67C3DB"],
-      Technology: ["#DDA0DD", "#E6B8E6"],
-      "Health & Wellness": ["#98FB98", "#ADFCAD"],
-      Travel: ["#F4A460", "#F6B481"],
-      Finance: ["#20B2AA", "#4BC4BC"],
-      "Personal Growth": ["#FF8C94", "#FFA3AA"],
-      "Creative Projects": ["#B8860B", "#C99A2E"],
+      Ideas: "#9C27B0",
+      Learning: "#3F51B5",
+      Projects: "#009688",
+      Research: "#FF5722",
+      Personal: "#E91E63",
+      "Business Ideas": "#673AB7",
+      "To Do": "#00BCD4",
     };
-    return categoryMap[category] || theme.gradients.primary;
+    return categoryMap[category] || theme.colors.primary;
   };
+
+  const getSourceIcon = () => {
+    switch (idea.source_type) {
+      case "voice":
+        return <Mic size={10} color={theme.colors.textTertiary} />;
+      case "url":
+        return <Link size={10} color={theme.colors.textTertiary} />;
+      default:
+        return <Type size={10} color={theme.colors.textTertiary} />;
+    }
+  };
+
+  const categoryColor = getCategoryColor(idea.category);
 
   return (
     <TouchableOpacity
       onPress={handlePress}
       style={{
         flex: 1,
-        marginHorizontal: 4,
+        marginHorizontal: 6,
+        marginBottom: 12,
       }}
       activeOpacity={0.7}
     >
       <View
         style={{
           backgroundColor: theme.colors.card,
-          borderRadius: 20,
+          borderRadius: theme.borderRadius.lg,
+          borderWidth: 1,
+          borderColor: theme.colors.border,
           overflow: "hidden",
-          ...theme.shadows.medium,
-          minHeight: 180,
+          minHeight: 160,
         }}
       >
-        {/* Category gradient header */}
-        <LinearGradient
-          colors={getCategoryGradient(idea.category)}
+        {/* Category indicator */}
+        <View
           style={{
-            padding: 12,
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
+            height: 3,
+            backgroundColor: categoryColor,
           }}
-        >
-          <Text
-            style={{
-              color: "#FFFFFF",
-              fontSize: 11,
-              fontWeight: "700",
-              textTransform: "uppercase",
-              letterSpacing: 0.5,
-            }}
-          >
-            {idea.category}
-          </Text>
-
-          {idea.category === "To Do" && (
-            <View>
-              {idea.completed ? (
-                <CheckSquare size={14} color="#FFFFFF" />
-              ) : (
-                <Square size={14} color="#FFFFFF" />
-              )}
-            </View>
-          )}
-        </LinearGradient>
+        />
 
         {/* Content */}
-        <View style={{ padding: 16, flex: 1 }}>
+        <View style={{ padding: 14, flex: 1 }}>
+          {/* Category badge */}
+          <View
+            style={{
+              alignSelf: "flex-start",
+              backgroundColor: `${categoryColor}15`,
+              paddingHorizontal: 8,
+              paddingVertical: 3,
+              borderRadius: 6,
+              marginBottom: 10,
+            }}
+          >
+            <Text
+              style={{
+                color: categoryColor,
+                fontSize: 10,
+                fontWeight: "600",
+                textTransform: "uppercase",
+                letterSpacing: 0.3,
+              }}
+            >
+              {idea.category}
+            </Text>
+          </View>
+
+          {/* Title */}
           <Text
             style={{
               fontSize: 15,
-              fontWeight: "700",
+              fontWeight: "600",
               color: theme.colors.text,
-              marginBottom: 8,
+              marginBottom: 6,
               lineHeight: 20,
             }}
             numberOfLines={2}
@@ -115,72 +126,18 @@ export function IdeaCard({ idea, categoryColor, theme }) {
             {idea.title}
           </Text>
 
+          {/* Summary */}
           {idea.summary && (
             <Text
               style={{
-                fontSize: 12,
+                fontSize: 13,
                 color: theme.colors.textSecondary,
-                lineHeight: 16,
-                marginBottom: 12,
+                lineHeight: 18,
               }}
-              numberOfLines={3}
+              numberOfLines={2}
             >
               {idea.summary}
             </Text>
-          )}
-
-          {/* Tags */}
-          {idea.tags && idea.tags.length > 0 && (
-            <View
-              style={{
-                flexDirection: "row",
-                flexWrap: "wrap",
-                gap: 4,
-                marginBottom: 8,
-              }}
-            >
-              {idea.tags.slice(0, 1).map((tag, index) => (
-                <View
-                  key={index}
-                  style={{
-                    backgroundColor: `${theme.colors.primary}15`,
-                    paddingHorizontal: 6,
-                    paddingVertical: 2,
-                    borderRadius: 8,
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: theme.colors.primary,
-                      fontSize: 10,
-                      fontWeight: "600",
-                    }}
-                  >
-                    #{tag}
-                  </Text>
-                </View>
-              ))}
-              {idea.tags.length > 1 && (
-                <View
-                  style={{
-                    backgroundColor: `${theme.colors.textTertiary}15`,
-                    paddingHorizontal: 6,
-                    paddingVertical: 2,
-                    borderRadius: 8,
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: theme.colors.textTertiary,
-                      fontSize: 10,
-                      fontWeight: "600",
-                    }}
-                  >
-                    +{idea.tags.length - 1}
-                  </Text>
-                </View>
-              )}
-            </View>
           )}
 
           <View style={{ flex: 1 }} />
@@ -191,18 +148,20 @@ export function IdeaCard({ idea, categoryColor, theme }) {
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "space-between",
-              paddingTop: 8,
+              marginTop: 12,
+              paddingTop: 10,
               borderTopWidth: 1,
               borderTopColor: theme.colors.border,
             }}
           >
             <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+              style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
             >
-              <Clock size={11} color={theme.colors.textTertiary} />
+              {getSourceIcon()}
+              <Clock size={10} color={theme.colors.textTertiary} />
               <Text
                 style={{
-                  fontSize: 10,
+                  fontSize: 11,
                   color: theme.colors.textTertiary,
                   fontWeight: "500",
                 }}
@@ -215,10 +174,10 @@ export function IdeaCard({ idea, categoryColor, theme }) {
               <View
                 style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
               >
-                <Eye size={11} color={theme.colors.textTertiary} />
+                <Eye size={10} color={theme.colors.textTertiary} />
                 <Text
                   style={{
-                    fontSize: 10,
+                    fontSize: 11,
                     color: theme.colors.textTertiary,
                     fontWeight: "500",
                   }}

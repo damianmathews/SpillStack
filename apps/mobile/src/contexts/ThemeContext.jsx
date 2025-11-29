@@ -11,108 +11,227 @@ export const useTheme = () => {
   return context;
 };
 
-// Light theme
-const lightTheme = {
-  mode: "light",
+// SpillStack Dark Theme - Premium, Framer-inspired
+const darkTheme = {
+  mode: "dark",
   colors: {
-    primary: "#6366F1",
-    secondary: "#8B5CF6",
-    background: "#FFFFFF",
-    surface: "#F8FAFC",
-    card: "#FFFFFF",
-    text: "#0F172A",
-    textSecondary: "#64748B",
-    textTertiary: "#94A3B8",
-    border: "#E2E8F0",
+    // Core
+    background: "#0A0A0B",
+    surface: "#141416",
+    card: "#1C1C1F",
+    cardHover: "#242428",
+
+    // Accent
+    primary: "#E91E63",
+    primaryLight: "#F8BBD9",
+    primaryDark: "#AD1457",
+    secondary: "#00BFA5",
+    secondaryLight: "#64FFDA",
+
+    // Text
+    text: "#FFFFFF",
+    textSecondary: "#9CA3AF",
+    textTertiary: "#6B7280",
+    textMuted: "#4B5563",
+
+    // Borders
+    border: "#2A2A2E",
+    borderLight: "#3A3A3F",
+
+    // Status
     error: "#EF4444",
     success: "#10B981",
     warning: "#F59E0B",
     info: "#3B82F6",
+
+    // Special
+    overlay: "rgba(0, 0, 0, 0.7)",
+    glass: "rgba(28, 28, 31, 0.8)",
+    glassBorder: "rgba(255, 255, 255, 0.08)",
   },
   gradients: {
-    primary: ["#6366F1", "#8B5CF6"],
-    secondary: ["#8B5CF6", "#EC4899"],
-    accent: ["#06B6D4", "#3B82F6"],
-    warm: ["#F59E0B", "#EF4444"],
-    cool: ["#10B981", "#06B6D4"],
+    primary: ["#E91E63", "#AD1457"],
+    secondary: ["#00BFA5", "#00897B"],
+    accent: ["#7C3AED", "#4F46E5"],
+    surface: ["#1C1C1F", "#141416"],
+    card: ["rgba(28, 28, 31, 0.9)", "rgba(20, 20, 22, 0.9)"],
+    pink: ["#E91E63", "#EC407A"],
+    teal: ["#00BFA5", "#26A69A"],
   },
   shadows: {
     small: {
       shadowColor: "#000000",
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 3,
-      elevation: 2,
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      elevation: 3,
     },
     medium: {
       shadowColor: "#000000",
       shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.1,
-      shadowRadius: 6,
-      elevation: 4,
+      shadowOpacity: 0.4,
+      shadowRadius: 8,
+      elevation: 6,
     },
     large: {
       shadowColor: "#000000",
-      shadowOffset: { width: 0, height: 10 },
-      shadowOpacity: 0.15,
-      shadowRadius: 20,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.5,
+      shadowRadius: 16,
+      elevation: 12,
+    },
+    glow: {
+      shadowColor: "#E91E63",
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.4,
+      shadowRadius: 12,
       elevation: 8,
+    },
+  },
+  spacing: {
+    xs: 4,
+    sm: 8,
+    md: 16,
+    lg: 24,
+    xl: 32,
+    xxl: 48,
+  },
+  borderRadius: {
+    sm: 8,
+    md: 12,
+    lg: 16,
+    xl: 24,
+    full: 9999,
+  },
+  typography: {
+    largeTitle: {
+      fontSize: 34,
+      fontWeight: "700",
+      letterSpacing: -0.5,
+    },
+    title1: {
+      fontSize: 28,
+      fontWeight: "700",
+      letterSpacing: -0.3,
+    },
+    title2: {
+      fontSize: 22,
+      fontWeight: "600",
+      letterSpacing: -0.2,
+    },
+    title3: {
+      fontSize: 20,
+      fontWeight: "600",
+    },
+    headline: {
+      fontSize: 17,
+      fontWeight: "600",
+    },
+    body: {
+      fontSize: 17,
+      fontWeight: "400",
+    },
+    callout: {
+      fontSize: 16,
+      fontWeight: "400",
+    },
+    subhead: {
+      fontSize: 15,
+      fontWeight: "400",
+    },
+    footnote: {
+      fontSize: 13,
+      fontWeight: "400",
+    },
+    caption1: {
+      fontSize: 12,
+      fontWeight: "400",
+    },
+    caption2: {
+      fontSize: 11,
+      fontWeight: "400",
     },
   },
 };
 
-// Dark theme
-const darkTheme = {
-  mode: "dark",
+// Light theme (keeping for toggle option, but dark is default)
+const lightTheme = {
+  mode: "light",
   colors: {
-    primary: "#818CF8",
-    secondary: "#A78BFA",
-    background: "#0F172A",
-    surface: "#1E293B",
-    card: "#334155",
-    text: "#F1F5F9",
-    textSecondary: "#CBD5E1",
-    textTertiary: "#94A3B8",
-    border: "#475569",
-    error: "#F87171",
-    success: "#34D399",
-    warning: "#FBBF24",
-    info: "#60A5FA",
+    background: "#F8F9FA",
+    surface: "#FFFFFF",
+    card: "#FFFFFF",
+    cardHover: "#F3F4F6",
+
+    primary: "#E91E63",
+    primaryLight: "#F8BBD9",
+    primaryDark: "#AD1457",
+    secondary: "#00BFA5",
+    secondaryLight: "#B2DFDB",
+
+    text: "#111827",
+    textSecondary: "#4B5563",
+    textTertiary: "#9CA3AF",
+    textMuted: "#D1D5DB",
+
+    border: "#E5E7EB",
+    borderLight: "#F3F4F6",
+
+    error: "#EF4444",
+    success: "#10B981",
+    warning: "#F59E0B",
+    info: "#3B82F6",
+
+    overlay: "rgba(0, 0, 0, 0.5)",
+    glass: "rgba(255, 255, 255, 0.8)",
+    glassBorder: "rgba(0, 0, 0, 0.08)",
   },
   gradients: {
-    primary: ["#818CF8", "#A78BFA"],
-    secondary: ["#A78BFA", "#F472B6"],
-    accent: ["#22D3EE", "#60A5FA"],
-    warm: ["#FBBF24", "#F87171"],
-    cool: ["#34D399", "#22D3EE"],
+    primary: ["#E91E63", "#AD1457"],
+    secondary: ["#00BFA5", "#00897B"],
+    accent: ["#7C3AED", "#4F46E5"],
+    surface: ["#FFFFFF", "#F8F9FA"],
+    card: ["rgba(255, 255, 255, 0.9)", "rgba(248, 249, 250, 0.9)"],
+    pink: ["#E91E63", "#EC407A"],
+    teal: ["#00BFA5", "#26A69A"],
   },
   shadows: {
     small: {
       shadowColor: "#000000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 3,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.08,
+      shadowRadius: 2,
       elevation: 2,
     },
     medium: {
       shadowColor: "#000000",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.25,
-      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
       elevation: 4,
     },
     large: {
       shadowColor: "#000000",
-      shadowOffset: { width: 0, height: 10 },
-      shadowOpacity: 0.3,
-      shadowRadius: 20,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.12,
+      shadowRadius: 8,
       elevation: 8,
     },
+    glow: {
+      shadowColor: "#E91E63",
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 6,
+    },
   },
+  spacing: darkTheme.spacing,
+  borderRadius: darkTheme.borderRadius,
+  typography: darkTheme.typography,
 };
 
 export const ThemeProvider = ({ children }) => {
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(true); // Default to dark
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -152,7 +271,7 @@ export const ThemeProvider = ({ children }) => {
   };
 
   if (isLoading) {
-    return null; // or a loading spinner
+    return null;
   }
 
   return (

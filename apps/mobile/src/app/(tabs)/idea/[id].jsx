@@ -29,6 +29,8 @@ import {
 } from "lucide-react-native";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { sampleIdeas } from "@/data/sampleData";
+import { getStoredIdeas } from "@/hooks/useCreateIdea";
 
 export default function IdeaDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -41,9 +43,21 @@ export default function IdeaDetailScreen() {
   const [editedContent, setEditedContent] = useState("");
   const [editedSummary, setEditedSummary] = useState("");
 
-  // Fetch individual idea
+  // Check if this is a sample idea first
+  const sampleIdea = sampleIdeas.find((idea) => idea.id === id);
+
+  // Fetch user-created ideas from local storage
+  const { data: localIdeas = [] } = useQuery({
+    queryKey: ["localIdeas"],
+    queryFn: getStoredIdeas,
+  });
+
+  // Check if this is a user-created idea
+  const localIdea = localIdeas.find((idea) => idea.id === id);
+
+  // Fetch individual idea from API (only if not sample or local)
   const {
-    data: idea,
+    data: apiIdea,
     isLoading,
     error,
   } = useQuery({
@@ -53,7 +67,11 @@ export default function IdeaDetailScreen() {
       if (!response.ok) throw new Error("Failed to fetch idea");
       return response.json();
     },
+    enabled: !sampleIdea && !localIdea, // Only fetch from API if not found locally
   });
+
+  // Priority: local user idea > sample idea > API idea
+  const idea = localIdea || sampleIdea || apiIdea;
 
   useEffect(() => {
     if (idea) {
@@ -195,7 +213,8 @@ export default function IdeaDetailScreen() {
     return categoryMap[category] || theme.gradients.primary;
   };
 
-  if (isLoading) {
+  // Show loading only for API fetches (not sample or local ideas)
+  if (isLoading && !sampleIdea && !localIdea) {
     return (
       <View
         style={{
@@ -210,7 +229,8 @@ export default function IdeaDetailScreen() {
     );
   }
 
-  if (error || !idea) {
+  // Show error only if not found locally and there's an error
+  if ((error || !idea) && !sampleIdea && !localIdea) {
     return (
       <View
         style={{

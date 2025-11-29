@@ -9,7 +9,6 @@ import {
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
 import {
   Moon,
   Sun,
@@ -19,12 +18,19 @@ import {
   Bell,
   HelpCircle,
   ChevronRight,
+  Sparkles,
 } from "lucide-react-native";
 import { useTheme } from "@/contexts/ThemeContext";
+import * as Haptics from "expo-haptics";
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { theme, isDark, toggleTheme } = useTheme();
+
+  const handleToggleTheme = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    toggleTheme();
+  };
 
   const settingSections = [
     {
@@ -36,7 +42,7 @@ export default function SettingsScreen() {
           subtitle: "Toggle between light and dark themes",
           type: "switch",
           value: isDark,
-          onToggle: toggleTheme,
+          onToggle: handleToggleTheme,
         },
       ],
     },
@@ -46,7 +52,7 @@ export default function SettingsScreen() {
         {
           icon: Download,
           title: "Export Data",
-          subtitle: "Download all your ideas and notes",
+          subtitle: "Download all your ideas and tasks",
           type: "action",
           onPress: () =>
             Alert.alert(
@@ -119,25 +125,29 @@ export default function SettingsScreen() {
         key={index}
         style={{
           backgroundColor: theme.colors.card,
-          borderRadius: 16,
+          borderRadius: theme.borderRadius.md,
+          borderWidth: 1,
+          borderColor: theme.colors.border,
           padding: 16,
-          marginBottom: 12,
+          marginBottom: 10,
           flexDirection: "row",
           alignItems: "center",
-          ...theme.shadows.small,
         }}
         onPress={item.onPress}
         disabled={item.type === "switch"}
+        activeOpacity={0.7}
       >
         <View
           style={{
             width: 40,
             height: 40,
-            borderRadius: 12,
-            backgroundColor: `${theme.colors.primary}15`,
+            borderRadius: 10,
+            backgroundColor: item.type === "danger"
+              ? `${theme.colors.error}15`
+              : `${theme.colors.primary}15`,
             alignItems: "center",
             justifyContent: "center",
-            marginRight: 16,
+            marginRight: 14,
           }}
         >
           <IconComponent
@@ -151,7 +161,7 @@ export default function SettingsScreen() {
         <View style={{ flex: 1 }}>
           <Text
             style={{
-              fontSize: 16,
+              fontSize: 15,
               fontWeight: "600",
               color:
                 item.type === "danger" ? theme.colors.error : theme.colors.text,
@@ -162,9 +172,9 @@ export default function SettingsScreen() {
           </Text>
           <Text
             style={{
-              fontSize: 14,
+              fontSize: 13,
               color: theme.colors.textSecondary,
-              lineHeight: 18,
+              lineHeight: 17,
             }}
           >
             {item.subtitle}
@@ -177,11 +187,10 @@ export default function SettingsScreen() {
             onValueChange={item.onToggle}
             trackColor={{
               false: theme.colors.border,
-              true: `${theme.colors.primary}40`,
+              true: theme.colors.primary,
             }}
-            thumbColor={
-              item.value ? theme.colors.primary : theme.colors.textTertiary
-            }
+            thumbColor="#FFFFFF"
+            ios_backgroundColor={theme.colors.border}
           />
         )}
 
@@ -196,53 +205,44 @@ export default function SettingsScreen() {
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <StatusBar style={isDark ? "light" : "dark"} />
 
-      {/* Header with gradient */}
-      <LinearGradient
-        colors={theme.gradients.primary}
+      {/* Header */}
+      <View
         style={{
-          paddingTop: insets.top + 20,
-          paddingBottom: 30,
+          paddingTop: insets.top + 16,
+          paddingBottom: 16,
           paddingHorizontal: 20,
+          backgroundColor: theme.colors.background,
         }}
       >
         <Text
           style={{
-            fontSize: 32,
-            fontWeight: "800",
-            color: "#FFFFFF",
-            marginBottom: 8,
+            ...theme.typography.largeTitle,
+            color: theme.colors.text,
           }}
         >
           Settings
         </Text>
-        <Text
-          style={{
-            fontSize: 16,
-            color: "#FFFFFF",
-            opacity: 0.9,
-          }}
-        >
-          Customize your experience
-        </Text>
-      </LinearGradient>
+      </View>
 
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
           padding: 20,
-          paddingBottom: insets.bottom + 20,
+          paddingBottom: insets.bottom + 100,
         }}
         showsVerticalScrollIndicator={false}
       >
         {settingSections.map((section, sectionIndex) => (
-          <View key={sectionIndex} style={{ marginBottom: 32 }}>
+          <View key={sectionIndex} style={{ marginBottom: 28 }}>
             <Text
               style={{
-                fontSize: 18,
-                fontWeight: "700",
-                color: theme.colors.text,
-                marginBottom: 16,
+                fontSize: 13,
+                fontWeight: "600",
+                color: theme.colors.textSecondary,
+                marginBottom: 12,
                 marginLeft: 4,
+                textTransform: "uppercase",
+                letterSpacing: 0.5,
               }}
             >
               {section.title}
@@ -253,25 +253,35 @@ export default function SettingsScreen() {
           </View>
         ))}
 
-        {/* App version */}
+        {/* App Info */}
         <View
           style={{
             alignItems: "center",
-            paddingTop: 20,
-            marginTop: 20,
+            paddingTop: 24,
+            marginTop: 16,
             borderTopWidth: 1,
             borderTopColor: theme.colors.border,
           }}
         >
-          <Text
+          <View
             style={{
-              fontSize: 14,
-              color: theme.colors.textTertiary,
-              marginBottom: 4,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
+              marginBottom: 8,
             }}
           >
-            Mind Organizer
-          </Text>
+            <Sparkles size={16} color={theme.colors.primary} />
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: "700",
+                color: theme.colors.text,
+              }}
+            >
+              SpillStack
+            </Text>
+          </View>
           <Text
             style={{
               fontSize: 12,

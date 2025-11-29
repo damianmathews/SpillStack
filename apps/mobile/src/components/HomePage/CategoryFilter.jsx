@@ -1,106 +1,72 @@
 import React from "react";
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import { useTheme } from "@/contexts/ThemeContext";
+import * as Haptics from "expo-haptics";
+
+const categoryColors = {
+  All: "#E91E63",
+  Ideas: "#9C27B0",
+  Learning: "#3F51B5",
+  Projects: "#009688",
+  Research: "#FF5722",
+  Personal: "#E91E63",
+  "Business Ideas": "#673AB7",
+  "To Do": "#00BCD4",
+};
 
 export function CategoryFilter({
-  categories,
+  categories = [],
   selectedCategory,
   onCategorySelect,
-  theme,
 }) {
-  const allCategories = ["All", ...categories.map((c) => c.name)];
+  const { theme } = useTheme();
 
-  const getCategoryGradient = (categoryName) => {
-    if (categoryName === "All") return theme.gradients.primary;
+  const allCategories = [
+    { name: "All" },
+    ...categories.filter((c) => c.name !== "All"),
+  ];
 
-    const categoryMap = {
-      Ideas: theme.gradients.primary,
-      Learning: theme.gradients.cool,
-      Projects: theme.gradients.accent,
-      Inspiration: theme.gradients.warm,
-      Research: theme.gradients.secondary,
-      Personal: theme.gradients.primary,
-      "To Do": ["#FF6B6B", "#FF8E8E"],
-      "Business Ideas": ["#4ECDC4", "#6EDDD6"],
-      "Life Hacks": ["#45B7D1", "#67C3DB"],
-      Technology: ["#DDA0DD", "#E6B8E6"],
-      "Health & Wellness": ["#98FB98", "#ADFCAD"],
-      Travel: ["#F4A460", "#F6B481"],
-      Finance: ["#20B2AA", "#4BC4BC"],
-      "Personal Growth": ["#FF8C94", "#FFA3AA"],
-      "Creative Projects": ["#B8860B", "#C99A2E"],
-    };
-
-    return categoryMap[categoryName] || theme.gradients.primary;
+  const handleSelect = (category) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onCategorySelect(category);
   };
 
   return (
-    <View style={{ paddingVertical: 20 }}>
+    <View style={{ paddingVertical: 12 }}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{
           paddingHorizontal: 20,
-          gap: 12,
+          gap: 8,
         }}
       >
         {allCategories.map((category) => {
-          const isSelected = selectedCategory === category;
-          const gradient = getCategoryGradient(category);
-
-          if (isSelected) {
-            return (
-              <LinearGradient
-                key={category}
-                colors={gradient}
-                style={{
-                  paddingHorizontal: 20,
-                  paddingVertical: 12,
-                  borderRadius: 25,
-                  minWidth: 80,
-                  alignItems: "center",
-                  ...theme.shadows.small,
-                }}
-              >
-                <TouchableOpacity onPress={() => onCategorySelect(category)}>
-                  <Text
-                    style={{
-                      color: "#FFFFFF",
-                      fontSize: 14,
-                      fontWeight: "700",
-                    }}
-                  >
-                    {category}
-                  </Text>
-                </TouchableOpacity>
-              </LinearGradient>
-            );
-          }
+          const isSelected = selectedCategory === category.name;
+          const color = categoryColors[category.name] || theme.colors.primary;
 
           return (
             <TouchableOpacity
-              key={category}
-              onPress={() => onCategorySelect(category)}
+              key={category.name}
+              onPress={() => handleSelect(category.name)}
+              activeOpacity={0.7}
               style={{
-                paddingHorizontal: 20,
-                paddingVertical: 12,
-                borderRadius: 25,
-                backgroundColor: theme.colors.card,
-                borderWidth: 1.5,
-                borderColor: theme.colors.border,
-                minWidth: 80,
-                alignItems: "center",
-                ...theme.shadows.small,
+                paddingHorizontal: 16,
+                paddingVertical: 8,
+                borderRadius: 20,
+                backgroundColor: isSelected ? color : theme.colors.surface,
+                borderWidth: 1,
+                borderColor: isSelected ? color : theme.colors.border,
               }}
             >
               <Text
                 style={{
-                  color: theme.colors.textSecondary,
-                  fontSize: 14,
+                  color: isSelected ? "#FFFFFF" : theme.colors.textSecondary,
+                  fontSize: 13,
                   fontWeight: "600",
                 }}
               >
-                {category}
+                {category.name}
               </Text>
             </TouchableOpacity>
           );

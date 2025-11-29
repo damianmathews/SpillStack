@@ -1,6 +1,8 @@
 import { Tabs } from "expo-router";
-import { Home, Settings } from "lucide-react-native";
+import { Lightbulb, CheckCircle, Settings } from "lucide-react-native";
 import { useTheme } from "@/contexts/ThemeContext";
+import { View } from "react-native";
+import { BlurView } from "expo-blur";
 
 export default function TabLayout() {
   const { theme, isDark } = useTheme();
@@ -10,21 +12,31 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: theme.colors.card,
-          borderTopWidth: 0,
-          elevation: 20,
-          shadowColor: "#000000",
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: isDark ? 0.3 : 0.1,
-          shadowRadius: 20,
+          position: "absolute",
+          backgroundColor: isDark ? "rgba(10, 10, 11, 0.9)" : "rgba(255, 255, 255, 0.9)",
+          borderTopWidth: 1,
+          borderTopColor: theme.colors.border,
           paddingTop: 8,
-          paddingBottom: 8,
-          height: 88,
+          paddingBottom: 28,
+          height: 84,
         },
+        tabBarBackground: () => (
+          <BlurView
+            intensity={80}
+            tint={isDark ? "dark" : "light"}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+            }}
+          />
+        ),
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.textTertiary,
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: "600",
           marginTop: 4,
         },
@@ -36,21 +48,51 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
-          tabBarIcon: ({ color, size }) => <Home color={color} size={24} />,
+          title: "Ideas",
+          tabBarIcon: ({ color, focused }) => (
+            <View style={{ opacity: focused ? 1 : 0.7 }}>
+              <Lightbulb
+                color={color}
+                size={24}
+                fill={focused ? color : "transparent"}
+              />
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="tasks"
+        options={{
+          title: "Tasks",
+          tabBarIcon: ({ color, focused }) => (
+            <View style={{ opacity: focused ? 1 : 0.7 }}>
+              <CheckCircle
+                color={color}
+                size={24}
+                fill={focused ? color : "transparent"}
+              />
+            </View>
+          ),
         }}
       />
       <Tabs.Screen
         name="idea/[id]"
         options={{
-          href: null, // Hide from tab bar
+          href: null,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           title: "Settings",
-          tabBarIcon: ({ color, size }) => <Settings color={color} size={24} />,
+          tabBarIcon: ({ color, focused }) => (
+            <View style={{ opacity: focused ? 1 : 0.7 }}>
+              <Settings
+                color={color}
+                size={24}
+              />
+            </View>
+          ),
         }}
       />
     </Tabs>
