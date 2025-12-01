@@ -13,19 +13,37 @@ import { Platform } from "react-native";
 // Lazy load Google Sign-In to avoid TurboModule initialization crash
 let GoogleSignin = null;
 let statusCodes = null;
+let googleSignInLoadAttempted = false;
+let googleSignInLoadPromise = null;
 
-const loadGoogleSignIn = async () => {
-  if (GoogleSignin) return { GoogleSignin, statusCodes };
+const loadGoogleSignIn = () => {
+  // Return cached result if already loaded
+  if (GoogleSignin) return Promise.resolve({ GoogleSignin, statusCodes });
 
-  try {
-    const module = await import("@react-native-google-signin/google-signin");
-    GoogleSignin = module.GoogleSignin;
-    statusCodes = module.statusCodes;
-    return { GoogleSignin, statusCodes };
-  } catch (error) {
-    console.warn("Failed to load Google Sign-In:", error);
-    return { GoogleSignin: null, statusCodes: null };
-  }
+  // Return existing promise if load is in progress
+  if (googleSignInLoadPromise) return googleSignInLoadPromise;
+
+  // Only attempt to load once
+  if (googleSignInLoadAttempted) return Promise.resolve({ GoogleSignin: null, statusCodes: null });
+
+  googleSignInLoadAttempted = true;
+
+  googleSignInLoadPromise = new Promise((resolve) => {
+    // Use setTimeout to ensure we're not in the critical initialization path
+    setTimeout(async () => {
+      try {
+        const module = await import("@react-native-google-signin/google-signin");
+        GoogleSignin = module.GoogleSignin;
+        statusCodes = module.statusCodes;
+        resolve({ GoogleSignin, statusCodes });
+      } catch (error) {
+        console.warn("Failed to load Google Sign-In:", error);
+        resolve({ GoogleSignin: null, statusCodes: null });
+      }
+    }, 0);
+  });
+
+  return googleSignInLoadPromise;
 };
 
 const AuthContext = createContext({});
@@ -41,12 +59,19 @@ export function AuthProvider({ children }) {
     const initGoogleSignIn = async () => {
       if (googleSignInConfigured.current) return;
 
+      // Skip if no client ID configured
+      const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+      if (!iosClientId) {
+        console.warn("Google Sign-In: No iOS client ID configured");
+        return;
+      }
+
       try {
         const { GoogleSignin: GS } = await loadGoogleSignIn();
         if (GS && !googleSignInConfigured.current) {
           googleSignInConfigured.current = true;
           GS.configure({
-            iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+            iosClientId,
           });
           setGoogleSignInReady(true);
         }
@@ -56,7 +81,8 @@ export function AuthProvider({ children }) {
     };
 
     // Delay initialization to ensure React Native bridge is fully ready
-    const timer = setTimeout(initGoogleSignIn, 100);
+    // Using 500ms to give ample time for all native modules to initialize
+    const timer = setTimeout(initGoogleSignIn, 500);
     return () => clearTimeout(timer);
   }, []);
 
