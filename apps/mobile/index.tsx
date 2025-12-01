@@ -19,17 +19,19 @@ import { serializeError } from 'serialize-error';
 import { DeviceErrorBoundaryWrapper } from './__create/DeviceErrorBoundary';
 import { ErrorBoundaryWrapper, SharedErrorBoundary } from './__create/SharedErrorBoundary';
 
+// Apply error boundary wrapper for BOTH dev and production
+function WrapperComponentProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  return <DeviceErrorBoundaryWrapper>{children}</DeviceErrorBoundaryWrapper>;
+}
+
+AppRegistry.setWrapperComponentProvider(() => WrapperComponentProvider);
+AppRegistry.registerComponent('main', () => App);
+
 if (__DEV__) {
   LogBox.ignoreAllLogs();
   LogBox.uninstall();
-  function WrapperComponentProvider({
-    children,
-  }: {
-    children: ReactNode;
-  }) {
-    return <DeviceErrorBoundaryWrapper>{children}</DeviceErrorBoundaryWrapper>;
-  }
-
-  AppRegistry.setWrapperComponentProvider(() => WrapperComponentProvider);
-  AppRegistry.registerComponent('main', () => App);
 }

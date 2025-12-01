@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useRef } from "react";
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -8,21 +8,57 @@ import {
   signInWithCredential,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import {
-  GoogleSignin,
-  statusCodes,
-} from "@react-native-google-signin/google-signin";
+import { Platform } from "react-native";
 
-// Configure Google Sign-In
-GoogleSignin.configure({
-  iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-});
+// Lazy load Google Sign-In to avoid TurboModule initialization crash
+let GoogleSignin = null;
+let statusCodes = null;
+
+const loadGoogleSignIn = async () => {
+  if (GoogleSignin) return { GoogleSignin, statusCodes };
+
+  try {
+    const module = await import("@react-native-google-signin/google-signin");
+    GoogleSignin = module.GoogleSignin;
+    statusCodes = module.statusCodes;
+    return { GoogleSignin, statusCodes };
+  } catch (error) {
+    console.warn("Failed to load Google Sign-In:", error);
+    return { GoogleSignin: null, statusCodes: null };
+  }
+};
 
 const AuthContext = createContext({});
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [googleSignInReady, setGoogleSignInReady] = useState(false);
+  const googleSignInConfigured = useRef(false);
+
+  // Initialize Google Sign-In after component mounts (safe for native modules)
+  useEffect(() => {
+    const initGoogleSignIn = async () => {
+      if (googleSignInConfigured.current) return;
+
+      try {
+        const { GoogleSignin: GS } = await loadGoogleSignIn();
+        if (GS && !googleSignInConfigured.current) {
+          googleSignInConfigured.current = true;
+          GS.configure({
+            iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+          });
+          setGoogleSignInReady(true);
+        }
+      } catch (error) {
+        console.warn("Failed to configure Google Sign-In:", error);
+      }
+    };
+
+    // Delay initialization to ensure React Native bridge is fully ready
+    const timer = setTimeout(initGoogleSignIn, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -55,7 +91,10 @@ export function AuthProvider({ children }) {
     try {
       // Sign out from Google if signed in
       try {
-        await GoogleSignin.signOut();
+        const { GoogleSignin: GS } = await loadGoogleSignIn();
+        if (GS) {
+          await GS.signOut();
+        }
       } catch (e) {
         // Ignore if not signed in with Google
       }
@@ -68,11 +107,17 @@ export function AuthProvider({ children }) {
 
   const signInWithGoogle = async () => {
     try {
+      const { GoogleSignin: GS, statusCodes: SC } = await loadGoogleSignIn();
+
+      if (!GS) {
+        return { user: null, error: "Google Sign-In not available" };
+      }
+
       // Check if Google Play Services are available (always true on iOS)
-      await GoogleSignin.hasPlayServices();
+      await GS.hasPlayServices();
 
       // Sign in with Google
-      const userInfo = await GoogleSignin.signIn();
+      const userInfo = await GS.signIn();
 
       // Get the ID token
       const idToken = userInfo.data?.idToken;
@@ -89,11 +134,12 @@ export function AuthProvider({ children }) {
 
       return { user: result.user, error: null };
     } catch (error) {
-      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+      const { statusCodes: SC } = await loadGoogleSignIn();
+      if (SC && error.code === SC.SIGN_IN_CANCELLED) {
         return { user: null, error: "Sign in cancelled" };
-      } else if (error.code === statusCodes.IN_PROGRESS) {
+      } else if (SC && error.code === SC.IN_PROGRESS) {
         return { user: null, error: "Sign in already in progress" };
-      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+      } else if (SC && error.code === SC.PLAY_SERVICES_NOT_AVAILABLE) {
         return { user: null, error: "Google Play Services not available" };
       } else {
         return { user: null, error: error.message };

@@ -1,10 +1,21 @@
 import React, { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { SharedErrorBoundary, Button } from './SharedErrorBoundary';
-import * as Updates from 'expo-updates';
 import { SplashScreen } from 'expo-router/build/exports';
-import { DevSettings, LogBox, Platform, View } from 'react-native';
+import { DevSettings, LogBox, Platform, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { serializeError } from 'serialize-error';
 import { reportErrorToRemote } from './report-error-to-remote';
+
+// Lazy load expo-updates to avoid issues with TurboModules
+let Updates: any = null;
+const loadUpdates = async () => {
+  if (Updates) return Updates;
+  try {
+    Updates = await import('expo-updates');
+    return Updates;
+  } catch (e) {
+    return null;
+  }
+};
 
 type ErrorBoundaryState = { hasError: boolean; error: unknown | null; sentLogs: boolean };
 
@@ -22,9 +33,14 @@ const DeviceErrorBoundary = ({
       return;
     }
 
-    Updates.reloadAsync().catch((error) => {
+    try {
+      const updatesModule = await loadUpdates();
+      if (updatesModule) {
+        await updatesModule.reloadAsync();
+      }
+    } catch (error) {
       // no-op, we don't want to show an error here
-    });
+    }
   }, []);
   return (
     <SharedErrorBoundary
