@@ -75,12 +75,12 @@ export default function IdeaDetailScreen() {
   // Mutations
   const updateMutation = useUpdateIdea(() => {
     setIsEditing(false);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (e) {}
   });
 
   const deleteMutation = useDeleteIdea(() => {
     router.back();
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (e) {}
   });
 
   useEffect(() => {
@@ -117,7 +117,7 @@ export default function IdeaDetailScreen() {
       return;
     }
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } catch (e) {}
     updateMutation.mutate({
       id: idea.id,
       updates: {
@@ -136,7 +136,7 @@ export default function IdeaDetailScreen() {
       return;
     }
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); } catch (e) {}
     Alert.alert(
       "Delete Idea",
       "Are you sure you want to delete this idea? This action cannot be undone.",
@@ -291,7 +291,7 @@ export default function IdeaDetailScreen() {
 
             <TouchableOpacity
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (e) {}
                 setIsEditing(!isEditing);
               }}
               style={{
@@ -662,7 +662,7 @@ export default function IdeaDetailScreen() {
                   <TouchableOpacity
                     key={simIdea.id}
                     onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (e) {}
                       router.push(`/idea/${simIdea.id}`);
                     }}
                     style={{
@@ -795,7 +795,7 @@ export default function IdeaDetailScreen() {
                   <TouchableOpacity
                     key={cat.name}
                     onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (e) {}
                       setEditedCategory(cat.name);
                       setShowCategoryPicker(false);
                     }}

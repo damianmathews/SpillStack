@@ -51,7 +51,13 @@ export default function TasksPage() {
     try {
       const stored = await AsyncStorage.getItem(TASKS_STORAGE_KEY);
       if (stored) {
-        setTasks(JSON.parse(stored));
+        try {
+          setTasks(JSON.parse(stored));
+        } catch (parseError) {
+          console.error("Error parsing tasks, clearing corrupted data:", parseError);
+          await AsyncStorage.removeItem(TASKS_STORAGE_KEY);
+          setTasks(sampleTasks);
+        }
       }
     } catch (error) {
       console.error("Error loading tasks:", error);
@@ -74,7 +80,9 @@ export default function TasksPage() {
   }, [loadTasks]);
 
   const toggleTask = (taskId) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (e) {}
     const newTasks = tasks.map((task) =>
       task.id === taskId ? { ...task, completed: !task.completed } : task
     );
@@ -83,7 +91,9 @@ export default function TasksPage() {
   };
 
   const deleteTask = (taskId) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } catch (e) {}
     Alert.alert("Delete Task", "Are you sure you want to delete this task?", [
       { text: "Cancel", style: "cancel" },
       {

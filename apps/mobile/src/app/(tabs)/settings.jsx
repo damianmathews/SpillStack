@@ -25,6 +25,8 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useFirebaseAuth } from "@/contexts/AuthContext";
 import * as Haptics from "expo-haptics";
 import { toast } from "sonner-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { STORAGE_KEY } from "@/hooks/useCreateIdea";
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
@@ -32,7 +34,7 @@ export default function SettingsScreen() {
   const { signOut, user } = useFirebaseAuth();
 
   const handleToggleTheme = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (e) {}
     toggleTheme();
   };
 
@@ -109,7 +111,18 @@ export default function SettingsScreen() {
               "Are you sure you want to delete all your ideas? This cannot be undone.",
               [
                 { text: "Cancel", style: "cancel" },
-                { text: "Delete", style: "destructive" },
+                {
+                  text: "Delete",
+                  style: "destructive",
+                  onPress: async () => {
+                    try {
+                      await AsyncStorage.removeItem(STORAGE_KEY);
+                      toast.success("All data cleared");
+                    } catch (error) {
+                      toast.error("Failed to clear data");
+                    }
+                  },
+                },
               ],
             ),
         },
