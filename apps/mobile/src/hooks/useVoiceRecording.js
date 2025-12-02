@@ -27,7 +27,7 @@ export function useVoiceRecording(onTranscriptionComplete) {
     };
   }, []);
 
-  const startRecording = async () => {
+  const startRecording = async (retryCount = 0) => {
     try {
       console.log("Requesting permissions...");
       const { granted } = await Audio.requestPermissionsAsync();
@@ -66,6 +66,13 @@ export function useVoiceRecording(onTranscriptionComplete) {
       console.log("Recording started successfully");
       return true;
     } catch (error) {
+      // Handle "app in background" error by retrying after a short delay
+      if (error.message?.includes("background") && retryCount < 3) {
+        console.log(`Audio session not ready, retrying (${retryCount + 1}/3)...`);
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        return startRecording(retryCount + 1);
+      }
+
       console.error("Failed to start recording:", error);
       Alert.alert("Error", `Failed to start recording: ${error.message}`);
       return false;
