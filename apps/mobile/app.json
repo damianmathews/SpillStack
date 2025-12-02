@@ -14,7 +14,9 @@
         "ITSAppUsesNonExemptEncryption": false,
         "NSMicrophoneUsageDescription": "SpillStack needs microphone access to capture voice ideas",
         "NSCalendarsUsageDescription": "SpillStack can help you schedule ideas on your calendar",
-        "NSCalendarsFullAccessUsageDescription": "SpillStack can help you schedule ideas on your calendar"
+        "NSCalendarsFullAccessUsageDescription": "SpillStack can help you schedule ideas on your calendar",
+        "NSContactsUsageDescription": "SpillStack may use contacts to help you share ideas with others",
+        "NSCameraUsageDescription": "SpillStack may use the camera to capture photos for your ideas"
       }
     },
     "android": {
@@ -65,9 +67,14 @@
     },
     "extra": {
       "router": {
-        "origin": false
+        "origin": false,
+        "sitemap": false
+      },
+      "eas": {
+        "projectId": "57bc8e03-7090-4f37-9003-cfc6f96acc7c"
       }
     },
-    "runtimeVersion": "1.0.0"
+    "runtimeVersion": "1.0.0",
+    "owner": "thedamester"
   }
 }
