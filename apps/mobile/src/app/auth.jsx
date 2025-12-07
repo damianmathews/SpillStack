@@ -80,24 +80,17 @@ export default function AuthScreen() {
   };
 
   const handleGoogleSignIn = async () => {
-    try {
-      setGoogleLoading(true);
-      const { user, error } = await signInWithGoogle();
-      setGoogleLoading(false);
+    setGoogleLoading(true);
+    const { user, error } = await signInWithGoogle();
+    setGoogleLoading(false);
 
-      if (error) {
-        if (typeof error === 'string' && !error.includes("cancelled")) {
-          toast.error(error);
-        } else if (typeof error !== 'string') {
-          toast.error("Google sign in failed");
-        }
-      } else if (user) {
-        toast.success("Welcome!");
-        router.replace("/(tabs)");
+    if (error) {
+      if (!error.includes("cancelled")) {
+        toast.error(error);
       }
-    } catch (e) {
-      setGoogleLoading(false);
-      toast.error("Google sign in failed: " + e.message);
+    } else if (user) {
+      toast.success("Welcome!");
+      router.replace("/(tabs)");
     }
   };
 
