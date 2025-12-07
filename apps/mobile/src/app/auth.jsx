@@ -16,6 +16,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useFirebaseAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner-native";
 import Svg, { Path } from "react-native-svg";
+import * as AppleAuthentication from "expo-apple-authentication";
 
 // Google "G" Logo Component
 const GoogleLogo = ({ size = 20 }) => (
@@ -41,7 +42,7 @@ const GoogleLogo = ({ size = 20 }) => (
 
 export default function AuthScreen() {
   const { theme, isDark } = useTheme();
-  const { signIn, signUp, signInWithGoogle } = useFirebaseAuth();
+  const { signIn, signUp, signInWithGoogle, signInWithApple } = useFirebaseAuth();
   const router = useRouter();
 
   const [isLogin, setIsLogin] = useState(true);
@@ -49,6 +50,7 @@ export default function AuthScreen() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
 
   const handleSubmit = async () => {
     if (!email || !password) {
@@ -78,9 +80,31 @@ export default function AuthScreen() {
   };
 
   const handleGoogleSignIn = async () => {
-    setGoogleLoading(true);
-    const { user, error } = await signInWithGoogle();
-    setGoogleLoading(false);
+    try {
+      setGoogleLoading(true);
+      const { user, error } = await signInWithGoogle();
+      setGoogleLoading(false);
+
+      if (error) {
+        if (typeof error === 'string' && !error.includes("cancelled")) {
+          toast.error(error);
+        } else if (typeof error !== 'string') {
+          toast.error("Google sign in failed");
+        }
+      } else if (user) {
+        toast.success("Welcome!");
+        router.replace("/(tabs)");
+      }
+    } catch (e) {
+      setGoogleLoading(false);
+      toast.error("Google sign in failed: " + e.message);
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    setAppleLoading(true);
+    const { user, error } = await signInWithApple();
+    setAppleLoading(false);
 
     if (error) {
       if (!error.includes("cancelled")) {
@@ -110,6 +134,15 @@ export default function AuthScreen() {
           </View>
 
           <View style={styles.form}>
+            {/* Apple Sign In Button */}
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+              buttonStyle={isDark ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+              cornerRadius={12}
+              style={styles.appleButton}
+              onPress={handleAppleSignIn}
+            />
+
             {/* Google Sign In Button */}
             <TouchableOpacity
               style={[
@@ -245,6 +278,10 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: 16,
+  },
+  appleButton: {
+    height: 52,
+    width: "100%",
   },
   googleButton: {
     height: 52,

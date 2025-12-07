@@ -5,8 +5,10 @@ import {
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   GoogleAuthProvider,
+  OAuthProvider,
   signInWithCredential,
 } from "firebase/auth";
+import * as AppleAuthentication from "expo-apple-authentication";
 import { auth } from "@/lib/firebase";
 import { Platform } from "react-native";
 
@@ -173,6 +175,35 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const signInWithApple = async () => {
+    try {
+      // Request Apple credentials
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      // Create an OAuthProvider for Apple
+      const provider = new OAuthProvider("apple.com");
+      const oauthCredential = provider.credential({
+        idToken: credential.identityToken,
+        rawNonce: credential.authorizationCode,
+      });
+
+      // Sign in to Firebase with the Apple credential
+      const result = await signInWithCredential(auth, oauthCredential);
+
+      return { user: result.user, error: null };
+    } catch (error) {
+      if (error.code === "ERR_REQUEST_CANCELED") {
+        return { user: null, error: "Sign in cancelled" };
+      }
+      return { user: null, error: error.message };
+    }
+  };
+
   const value = {
     user,
     loading,
@@ -181,6 +212,7 @@ export function AuthProvider({ children }) {
     signUp,
     signOut,
     signInWithGoogle,
+    signInWithApple,
   };
 
   return (
