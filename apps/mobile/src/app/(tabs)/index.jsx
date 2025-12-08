@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef, memo } from "react";
 import {
   View,
   FlatList,
@@ -14,13 +14,26 @@ import {
   Lightbulb,
   CheckCircle2,
   Circle,
-  Settings,
   Clock,
   Sparkles,
   ChevronRight,
+  Check,
 } from "lucide-react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  withDelay,
+  withSequence,
+  withSpring,
+  runOnJS,
+  Easing,
+  FadeOut,
+  SlideOutLeft,
+  Layout,
+} from "react-native-reanimated";
 
 import { useTheme } from "@/contexts/ThemeContext";
 import { useFirebaseAuth } from "@/contexts/AuthContext";
@@ -36,6 +49,125 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { HomeHeader } from "@/components/HomePage/HomeHeader";
 
 const TASKS_STORAGE_KEY = "@spillstack_tasks";
+
+// Animated Task Item Component - defined outside main component to prevent remounting
+const AnimatedTaskItem = memo(function AnimatedTaskItem({
+  task,
+  onToggle,
+  onNavigate,
+  formatDate,
+  isRemoving,
+  onRemoveComplete,
+  theme
+}) {
+  const opacity = useSharedValue(1);
+  const scale = useSharedValue(1);
+  const height = useSharedValue(60);
+  const checkScale = useSharedValue(task.completed ? 1 : 0);
+  const hasStartedRemoving = useRef(false);
+
+  useEffect(() => {
+    if (isRemoving && !hasStartedRemoving.current) {
+      hasStartedRemoving.current = true;
+      // Animate checkmark in with spring
+      checkScale.value = withSpring(1, { damping: 12, stiffness: 200 });
+
+      // After 2 seconds, fade out and collapse
+      const timer = setTimeout(() => {
+        opacity.value = withTiming(0, { duration: 250 });
+        scale.value = withTiming(0.95, { duration: 250 });
+        height.value = withTiming(0, { duration: 250 }, () => {
+          runOnJS(onRemoveComplete)(task.id);
+        });
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isRemoving]);
+
+  const containerStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ scale: scale.value }],
+    height: height.value,
+    marginBottom: height.value > 0 ? 8 : 0,
+    overflow: "hidden",
+  }));
+
+  const checkmarkStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: checkScale.value }],
+  }));
+
+  const isChecked = task.completed || isRemoving;
+
+  return (
+    <Animated.View style={containerStyle}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          backgroundColor: theme.colors.surface.level1,
+          borderRadius: theme.radius.lg,
+          borderWidth: 1,
+          borderColor: theme.colors.border.subtle,
+          padding: theme.spacing.md,
+          height: 52,
+        }}
+      >
+        <TouchableOpacity
+          onPress={() => onToggle(task.id)}
+          style={{ marginRight: theme.spacing.sm }}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          disabled={isRemoving}
+        >
+          {isChecked ? (
+            <Animated.View
+              style={[
+                {
+                  width: 20,
+                  height: 20,
+                  borderRadius: 10,
+                  backgroundColor: theme.colors.accent.primary,
+                  alignItems: "center",
+                  justifyContent: "center",
+                },
+                checkmarkStyle,
+              ]}
+            >
+              <Check size={14} color="#FFFFFF" strokeWidth={3} />
+            </Animated.View>
+          ) : (
+            <Circle size={20} color={theme.colors.text.muted} />
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={onNavigate}
+          style={{ flex: 1, flexDirection: "row", alignItems: "center" }}
+          activeOpacity={0.7}
+          disabled={isRemoving}
+        >
+          <View style={{ flex: 1, marginRight: theme.spacing.md }}>
+            <AppText
+              variant="caption"
+              color={isChecked ? "muted" : "primary"}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              style={{
+                textDecorationLine: isChecked ? "line-through" : "none",
+                opacity: isChecked ? 0.6 : 1,
+                fontSize: 14,
+              }}
+            >
+              {task.title}
+            </AppText>
+          </View>
+          <AppText variant="caption" color="muted" style={{ fontSize: 12, flexShrink: 0 }}>
+            {formatDate(task.created_at)}
+          </AppText>
+        </TouchableOpacity>
+      </View>
+    </Animated.View>
+  );
+});
 
 // Save tasks to storage
 const saveTasks = async (newTasks) => {
@@ -69,6 +201,9 @@ export default function HomePage() {
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [showTextModal, setShowTextModal] = useState(false);
   const [showLinkModal, setShowLinkModal] = useState(false);
+
+  // Track tasks being removed (showing checked state before animating out)
+  const [removingTasks, setRemovingTasks] = useState(new Set());
 
   // Fetch ideas
   const { data: apiIdeas = [] } = useIdeas("All", "");
@@ -113,6 +248,9 @@ export default function HomePage() {
   });
 
   const filteredTasks = tasks.filter((task) => {
+    // Hide tasks when filtering by tag (tasks don't have tags)
+    if (activeTag) return false;
+    // Only show tasks that match search query
     if (!searchQuery) return true;
     return task.title?.toLowerCase().includes(searchQuery.toLowerCase());
   });
@@ -126,17 +264,43 @@ export default function HomePage() {
     })
     .slice(0, 4);
 
-  // Get upcoming/pending tasks - show more since there's space
-  const pendingTasks = filteredTasks.filter((t) => !t.completed).slice(0, 5);
+  // Get tasks - show incomplete tasks plus any that are currently animating out
+  const pendingTasks = filteredTasks
+    .filter((t) => !t.completed || removingTasks.has(t.id))
+    .slice(0, 10);
 
   const toggleTask = async (taskId) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const newTasks = tasks.map((task) =>
-      task.id === taskId ? { ...task, completed: !task.completed } : task
-    );
-    await saveTasks(newTasks);
-    queryClient.invalidateQueries({ queryKey: ["localTasks"] });
+    const task = tasks.find((t) => t.id === taskId);
+
+    if (task && !task.completed) {
+      // Task is being completed - add to removing set to show checked state
+      setRemovingTasks((prev) => new Set([...prev, taskId]));
+
+      // Save the task as completed immediately
+      const newTasks = tasks.map((t) =>
+        t.id === taskId ? { ...t, completed: true } : t
+      );
+      await saveTasks(newTasks);
+      queryClient.invalidateQueries({ queryKey: ["localTasks"] });
+    } else {
+      // Task is being uncompleted - just toggle normally
+      const newTasks = tasks.map((t) =>
+        t.id === taskId ? { ...t, completed: !t.completed } : t
+      );
+      await saveTasks(newTasks);
+      queryClient.invalidateQueries({ queryKey: ["localTasks"] });
+    }
   };
+
+  // Remove task from removing set (called after animation completes)
+  const finishRemovingTask = useCallback((taskId) => {
+    setRemovingTasks((prev) => {
+      const next = new Set(prev);
+      next.delete(taskId);
+      return next;
+    });
+  }, []);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -165,14 +329,14 @@ export default function HomePage() {
   };
 
   // Section Header Component
-  const SectionHeader = ({ title, icon: Icon, onSeeAll }) => (
+  const SectionHeader = ({ title, icon: Icon, onSeeAll, isFirst }) => (
     <View
       style={{
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        marginBottom: theme.spacing.md,
-        marginTop: theme.spacing.xl,
+        marginBottom: theme.spacing.sm,
+        marginTop: isFirst ? theme.spacing.lg : theme.spacing.xl,
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.sm }}>
@@ -196,118 +360,78 @@ export default function HomePage() {
     </View>
   );
 
-  // Recent Idea Card (horizontal scroll)
-  const RecentIdeaCard = ({ idea }) => (
-    <TouchableOpacity
-      onPress={() => handleIdeaPress(idea)}
-      style={{
-        width: 200,
-        backgroundColor: theme.colors.surface.level1,
-        borderRadius: theme.radius.lg,
-        borderWidth: 1,
-        borderColor: theme.colors.border.subtle,
-        padding: theme.spacing.lg,
-        marginRight: theme.spacing.md,
-      }}
-      activeOpacity={0.7}
-    >
-      <View
-        style={{
-          alignSelf: "flex-start",
-          backgroundColor: theme.colors.accent.softBg,
-          paddingHorizontal: theme.spacing.sm,
-          paddingVertical: theme.spacing.xs,
-          borderRadius: theme.radius.sm,
-          marginBottom: theme.spacing.sm,
-        }}
-      >
-        <AppText
-          variant="caption"
-          style={{
-            color: theme.colors.text.secondary,
-            textTransform: "uppercase",
-            letterSpacing: 0.5,
-            fontWeight: "500",
-          }}
-        >
-          {idea.category}
-        </AppText>
-      </View>
-      <AppText
-        variant="subtitle"
-        color="primary"
-        numberOfLines={2}
-        style={{ marginBottom: theme.spacing.sm }}
-      >
-        {idea.title}
-      </AppText>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.xs }}>
-        <Clock size={12} color={theme.colors.text.muted} />
-        <AppText variant="caption" color="muted">
-          {formatDate(idea.created_at)}
-        </AppText>
-      </View>
-    </TouchableOpacity>
-  );
+  // Recent Idea Card (horizontal scroll) - taller with content preview
+  const RecentIdeaCard = ({ idea }) => {
+    // Get preview text from summary or content
+    const previewText = idea.summary || idea.content || "";
 
-  // Task Preview Item
-  const TaskPreviewItem = ({ task }) => (
-    <View
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: theme.colors.surface.level1,
-        borderRadius: theme.radius.lg,
-        borderWidth: 1,
-        borderColor: theme.colors.border.subtle,
-        padding: theme.spacing.md,
-        marginBottom: theme.spacing.sm,
-      }}
-    >
+    return (
       <TouchableOpacity
-        onPress={() => toggleTask(task.id)}
-        style={{ marginRight: theme.spacing.sm }}
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-      >
-        {task.completed ? (
-          <CheckCircle2
-            size={20}
-            color={theme.colors.accent.secondary}
-            fill={theme.colors.accent.secondary}
-          />
-        ) : (
-          <Circle size={20} color={theme.colors.text.muted} />
-        )}
-      </TouchableOpacity>
-      <TouchableOpacity
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push("/(tabs)/library/tasks");
+        onPress={() => handleIdeaPress(idea)}
+        style={{
+          width: 200,
+          height: 180,
+          backgroundColor: theme.colors.surface.level1,
+          borderRadius: theme.radius.lg,
+          borderWidth: 1,
+          borderColor: theme.colors.border.subtle,
+          padding: theme.spacing.lg,
+          marginRight: theme.spacing.md,
+          overflow: "hidden",
         }}
-        style={{ flex: 1, flexDirection: "row", alignItems: "center" }}
         activeOpacity={0.7}
       >
-        <View style={{ flex: 1, marginRight: theme.spacing.md }}>
+        <View
+          style={{
+            alignSelf: "flex-start",
+            backgroundColor: theme.colors.accent.softBg,
+            paddingHorizontal: theme.spacing.sm,
+            paddingVertical: theme.spacing.xs,
+            borderRadius: theme.radius.sm,
+            marginBottom: theme.spacing.sm,
+          }}
+        >
           <AppText
             variant="caption"
-            color={task.completed ? "muted" : "primary"}
-            numberOfLines={1}
-            ellipsizeMode="tail"
             style={{
-              textDecorationLine: task.completed ? "line-through" : "none",
-              opacity: task.completed ? 0.7 : 1,
-              fontSize: 14,
+              color: theme.colors.text.secondary,
+              textTransform: "uppercase",
+              letterSpacing: 0.5,
+              fontWeight: "500",
             }}
           >
-            {task.title}
+            {idea.category}
           </AppText>
         </View>
-        <AppText variant="caption" color="muted" style={{ fontSize: 12, flexShrink: 0 }}>
-          {formatDate(task.created_at)}
+        <AppText
+          variant="subtitle"
+          color="primary"
+          numberOfLines={2}
+          style={{ marginBottom: theme.spacing.xs }}
+        >
+          {idea.title}
         </AppText>
+        {/* Content preview with fade effect */}
+        <View style={{ flex: 1, overflow: "hidden" }}>
+          <AppText
+            variant="caption"
+            color="muted"
+            numberOfLines={3}
+            style={{ fontSize: 12, lineHeight: 16 }}
+          >
+            {previewText}
+          </AppText>
+        </View>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.xs, marginTop: theme.spacing.xs }}>
+          <Clock size={12} color={theme.colors.text.muted} />
+          <AppText variant="caption" color="muted">
+            {formatDate(idea.created_at)}
+          </AppText>
+        </View>
       </TouchableOpacity>
-    </View>
-  );
+    );
+  };
+
 
   // Empty State for search
   const SearchEmptyState = () => (
@@ -338,7 +462,6 @@ export default function HomePage() {
         insets={insets}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        onSettingsPress={() => router.push("/settings-modal")}
         activeTag={activeTag}
         onClearTag={() => setActiveTag(null)}
       />
@@ -368,9 +491,10 @@ export default function HomePage() {
             {recentIdeas.length > 0 && (
               <>
                 <SectionHeader
-                  title="New this week"
+                  title="Ideas"
                   icon={Sparkles}
-                  onSeeAll={() => router.push("/(tabs)/library")}
+                  onSeeAll={() => router.push("/(tabs)/library/ideas")}
+                  isFirst
                 />
                 <ScrollView
                   horizontal
@@ -389,12 +513,25 @@ export default function HomePage() {
             {pendingTasks.length > 0 && (
               <>
                 <SectionHeader
-                  title="Upcoming tasks"
+                  title="To Do"
                   icon={CheckCircle2}
                   onSeeAll={() => router.push("/(tabs)/library/tasks")}
+                  isFirst={recentIdeas.length === 0}
                 />
                 {pendingTasks.map((task) => (
-                  <TaskPreviewItem key={task.id} task={task} />
+                  <AnimatedTaskItem
+                    key={task.id}
+                    task={task}
+                    onToggle={toggleTask}
+                    onNavigate={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      router.push("/(tabs)/library/tasks");
+                    }}
+                    formatDate={formatDate}
+                    isRemoving={removingTasks.has(task.id)}
+                    onRemoveComplete={finishRemovingTask}
+                    theme={theme}
+                  />
                 ))}
               </>
             )}
@@ -402,7 +539,7 @@ export default function HomePage() {
             {/* All Recent Content (if searching) */}
             {isSearching && filteredIdeas.length > 0 && (
               <>
-                <SectionHeader title="Ideas" icon={Lightbulb} />
+                <SectionHeader title="Ideas" icon={Lightbulb} isFirst />
                 {filteredIdeas.slice(0, 6).map((idea) => (
                   <TouchableOpacity
                     key={idea.id}

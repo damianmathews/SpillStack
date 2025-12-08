@@ -16,7 +16,7 @@ export const sampleIdeas = [
     title: "React Native Animation Research",
     content: "Need to dive deeper into Reanimated 3 and Moti for smoother animations. Check out the Skia integration for advanced graphics.",
     summary: "Research Reanimated 3, Moti, and Skia for React Native animations",
-    category: "Learning",
+    category: "Research",
     source_type: "voice",
     tags: ["react-native", "animations", "development"],
     created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
@@ -105,10 +105,9 @@ export const sampleTasks = [
 // Categories with refined colors (Graphite + Iris palette)
 export const categories = [
   { name: "All", color: "#4F7DFF" },
-  { name: "Ideas", color: "#8B5CF6" },
-  { name: "Learning", color: "#3B82F6" },
   { name: "Projects", color: "#14B8A6" },
   { name: "Research", color: "#F97316" },
   { name: "Personal", color: "#EC4899" },
   { name: "Business Ideas", color: "#8B5CF6" },
+  { name: "Creative", color: "#F59E0B" },
 ];

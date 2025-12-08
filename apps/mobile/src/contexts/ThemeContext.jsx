@@ -117,12 +117,11 @@ export const gradients = {
 // Category colors
 export const categoryColors = {
   All: "#4F7DFF",
-  Ideas: "#8B5CF6",
-  Learning: "#3B82F6",
   Projects: "#14B8A6",
   Research: "#F97316",
   Personal: "#EC4899",
   "Business Ideas": "#8B5CF6",
+  Creative: "#F59E0B",
   "To Do": "#06B6D4",
 };
 
@@ -334,11 +333,16 @@ export const ThemeProvider = ({ children }) => {
   const loadThemePreference = async () => {
     try {
       const savedTheme = await AsyncStorage.getItem("@theme_preference");
-      if (savedTheme !== null) {
-        setIsDark(savedTheme === "dark");
+      // Default to dark mode, only switch to light if explicitly saved as "light"
+      if (savedTheme === "light") {
+        setIsDark(false);
+      } else {
+        // Dark mode is the default
+        setIsDark(true);
       }
     } catch (error) {
       console.error("Error loading theme preference:", error);
+      setIsDark(true); // Default to dark on error
     } finally {
       setIsLoading(false);
     }

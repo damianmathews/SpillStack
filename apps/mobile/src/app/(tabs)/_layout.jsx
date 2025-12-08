@@ -1,4 +1,4 @@
-import { Tabs } from "expo-router";
+import { Tabs, router } from "expo-router";
 import { Home, Library } from "lucide-react-native";
 import { useTheme } from "@/contexts/ThemeContext";
 import { BlurView } from "expo-blur";
@@ -70,6 +70,13 @@ export default function TabLayout() {
               strokeWidth={focused ? 2.5 : 2}
             />
           ),
+        }}
+        listeners={{
+          tabPress: (e) => {
+            // Always navigate to library index when tab is pressed
+            e.preventDefault();
+            router.replace("/(tabs)/library");
+          },
         }}
       />
       {/* Hide old tabs - keeping files for backward compatibility but not shown in tab bar */}

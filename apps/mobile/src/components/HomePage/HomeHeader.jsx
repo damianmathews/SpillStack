@@ -1,12 +1,12 @@
 import React from "react";
 import { View, TextInput, Keyboard, TouchableOpacity, Image } from "react-native";
-import { Search, Settings, X } from "lucide-react-native";
+import { Search, X } from "lucide-react-native";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useFirebaseAuth } from "@/contexts/AuthContext";
 import { AppText } from "@/components/primitives";
 import * as Haptics from "expo-haptics";
 
-export function HomeHeader({ insets, searchQuery, onSearchChange, onSettingsPress, activeTag, onClearTag }) {
+export function HomeHeader({ insets, searchQuery, onSearchChange, activeTag, onClearTag }) {
   const { theme, isDark } = useTheme();
   const { user } = useFirebaseAuth();
 
@@ -22,40 +22,12 @@ export function HomeHeader({ insets, searchQuery, onSearchChange, onSettingsPres
     <View
       style={{
         paddingTop: insets.top,
-        paddingBottom: theme.spacing.sm,
+        paddingBottom: 4,
         paddingHorizontal: theme.spacing.xl,
       }}
     >
-      {/* Top row: Settings button on right */}
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "flex-start",
-          justifyContent: "flex-end",
-          marginBottom: 0,
-        }}
-      >
-        {/* Settings button */}
-        <TouchableOpacity
-          onPress={onSettingsPress}
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 18,
-            backgroundColor: theme.colors.surface.level1,
-            alignItems: "center",
-            justifyContent: "center",
-            borderWidth: 1,
-            borderColor: theme.colors.border.subtle,
-          }}
-          activeOpacity={0.7}
-        >
-          <Settings size={18} color={theme.colors.text.secondary} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Centered Logo */}
-      <View style={{ alignItems: "center", marginBottom: theme.spacing.sm, marginTop: -10 }}>
+      {/* Centered Logo - 25% smaller */}
+      <View style={{ alignItems: "center", marginBottom: 12, marginTop: 0 }}>
         <Image
           source={
             isDark
@@ -63,12 +35,12 @@ export function HomeHeader({ insets, searchQuery, onSearchChange, onSettingsPres
               : require("../../../assets/spillstack-logo-black.png")
           }
           style={{
-            width: 660,
-            height: 165,
+            width: 495,
+            height: 124,
           }}
           resizeMode="contain"
         />
-        <AppText variant="subtitle" style={{ color: "#FFFFFF", fontWeight: "600", marginTop: theme.spacing.xs }}>
+        <AppText variant="subtitle" style={{ color: isDark ? "#FFFFFF" : "#0F172A", fontWeight: "600", marginTop: 2 }}>
           Welcome back, {firstName}
         </AppText>
       </View>

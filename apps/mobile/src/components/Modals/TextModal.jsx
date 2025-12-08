@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -19,6 +19,8 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useCreateIdea } from "@/hooks/useCreateIdea";
 import { processIdea } from "@/services/ai";
 import * as Haptics from "expo-haptics";
+import { BouncingDotsLoader } from "@/components/LoadingAnimations/BouncingDotsLoader";
+import { AppText } from "@/components/primitives";
 
 export function TextModal({ visible, onClose }) {
   const { theme, isDark } = useTheme();
@@ -26,6 +28,8 @@ export function TextModal({ visible, onClose }) {
   const [text, setText] = useState("");
   const [charCount, setCharCount] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processingProgress, setProcessingProgress] = useState(0);
+  const processingIntervalRef = useRef(null);
 
   const handleSuccess = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -35,6 +39,36 @@ export function TextModal({ visible, onClose }) {
   };
 
   const createIdeaMutation = useCreateIdea(handleSuccess);
+
+  // Simulate progress during processing
+  useEffect(() => {
+    if (isProcessing) {
+      setProcessingProgress(0);
+      let progress = 0;
+      processingIntervalRef.current = setInterval(() => {
+        progress += (0.95 - progress) * 0.08;
+        setProcessingProgress(Math.min(progress, 0.95));
+      }, 200);
+    } else {
+      if (processingIntervalRef.current) {
+        clearInterval(processingIntervalRef.current);
+        processingIntervalRef.current = null;
+      }
+      // Complete fill then reset
+      if (processingProgress > 0.5) {
+        setProcessingProgress(1);
+        setTimeout(() => setProcessingProgress(0), 500);
+      } else {
+        setProcessingProgress(0);
+      }
+    }
+
+    return () => {
+      if (processingIntervalRef.current) {
+        clearInterval(processingIntervalRef.current);
+      }
+    };
+  }, [isProcessing]);
 
   const handleTextChange = (value) => {
     setText(value);
@@ -175,70 +209,74 @@ export function TextModal({ visible, onClose }) {
             </View>
 
             {/* Content */}
-            <ScrollView
-              style={styles.scrollView}
-              contentContainerStyle={[
-                styles.scrollContent,
-                { padding: theme.spacing.xl },
-              ]}
-              keyboardDismissMode="interactive"
-            >
-              <View
-                style={[
-                  styles.inputContainer,
-                  {
-                    backgroundColor: theme.colors.surface.level1,
-                    borderColor: theme.colors.border.subtle,
-                    borderRadius: theme.radius.lg,
-                    padding: theme.spacing.lg,
-                  },
+            {isProcessing ? (
+              <BouncingDotsLoader statusText="AI is thinking..." />
+            ) : (
+              <ScrollView
+                style={styles.scrollView}
+                contentContainerStyle={[
+                  styles.scrollContent,
+                  { padding: theme.spacing.xl },
                 ]}
+                keyboardDismissMode="interactive"
               >
-                <TextInput
-                  value={text}
-                  onChangeText={handleTextChange}
-                  placeholder="What's on your mind?"
-                  placeholderTextColor={theme.colors.text.muted}
+                <View
                   style={[
-                    theme.typography.body,
-                    styles.textInput,
-                    { color: theme.colors.text.primary },
+                    styles.inputContainer,
+                    {
+                      backgroundColor: theme.colors.surface.level1,
+                      borderColor: theme.colors.border.subtle,
+                      borderRadius: theme.radius.lg,
+                      padding: theme.spacing.lg,
+                    },
                   ]}
-                  multiline
-                  autoFocus
-                  textAlignVertical="top"
-                  editable={!isSubmitting}
-                />
-              </View>
-
-              {/* Footer Info */}
-              <View
-                style={[
-                  styles.footer,
-                  {
-                    marginTop: theme.spacing.lg,
-                    paddingHorizontal: theme.spacing.xs,
-                  },
-                ]}
-              >
-                <View style={styles.aiHint}>
-                  <Sparkles size={14} color={theme.colors.accent.primary} strokeWidth={2} />
-                  <Text
+                >
+                  <TextInput
+                    value={text}
+                    onChangeText={handleTextChange}
+                    placeholder="What's on your mind?"
+                    placeholderTextColor={theme.colors.text.muted}
                     style={[
-                      theme.typography.caption,
-                      { color: theme.colors.text.secondary, marginLeft: theme.spacing.sm },
+                      theme.typography.body,
+                      styles.textInput,
+                      { color: theme.colors.text.primary },
                     ]}
+                    multiline
+                    autoFocus
+                    textAlignVertical="top"
+                    editable={!isSubmitting}
+                  />
+                </View>
+
+                {/* Footer Info */}
+                <View
+                  style={[
+                    styles.footer,
+                    {
+                      marginTop: theme.spacing.lg,
+                      paddingHorizontal: theme.spacing.xs,
+                    },
+                  ]}
+                >
+                  <View style={styles.aiHint}>
+                    <Sparkles size={14} color={theme.colors.accent.primary} strokeWidth={2} />
+                    <Text
+                      style={[
+                        theme.typography.caption,
+                        { color: theme.colors.text.secondary, marginLeft: theme.spacing.sm },
+                      ]}
+                    >
+                      AI will create title, summary & tags
+                    </Text>
+                  </View>
+                  <Text
+                    style={[theme.typography.caption, { color: theme.colors.text.muted }]}
                   >
-                    AI will create title, summary & tags
+                    {charCount} characters
                   </Text>
                 </View>
-                <Text
-                  style={[theme.typography.caption, { color: theme.colors.text.muted }]}
-                >
-                  {charCount} characters
-                </Text>
-              </View>
-            </ScrollView>
+              </ScrollView>
+            )}
           </View>
         </KeyboardAvoidingView>
       </BlurView>
@@ -282,5 +320,11 @@ const styles = StyleSheet.create({
   aiHint: {
     flexDirection: "row",
     alignItems: "center",
+  },
+  processingContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
   },
 });

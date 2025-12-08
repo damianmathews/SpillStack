@@ -9,10 +9,11 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import {
   Circle,
-  CheckCircle2,
+  Check,
   Trash2,
   ListTodo,
   ArrowLeft,
@@ -29,11 +30,20 @@ import { sampleTasks } from "@/data/sampleData";
 
 const TASKS_STORAGE_KEY = "@spillstack_tasks";
 
+// Save tasks to storage
+const saveTasks = async (newTasks) => {
+  try {
+    await AsyncStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(newTasks));
+  } catch (error) {
+    console.error("Error saving tasks:", error);
+  }
+};
+
 export default function LibraryTasksPage() {
   const insets = useSafeAreaInsets();
   const { theme, isDark } = useTheme();
+  const queryClient = useQueryClient();
 
-  const [tasks, setTasks] = useState(sampleTasks);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -41,70 +51,52 @@ export default function LibraryTasksPage() {
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [showTextModal, setShowTextModal] = useState(false);
 
-  // Handle tasks created from modals
-  const handleTasksCreated = (newTasks) => {
-    const updatedTasks = [...newTasks, ...tasks];
-    setTasks(updatedTasks);
-    saveTasks(updatedTasks);
-  };
-
-  // Load tasks from storage
-  const loadTasks = useCallback(async () => {
-    try {
-      const stored = await AsyncStorage.getItem(TASKS_STORAGE_KEY);
-      if (stored) {
-        try {
-          setTasks(JSON.parse(stored));
-        } catch (parseError) {
-          console.error("Error parsing tasks, clearing corrupted data:", parseError);
-          await AsyncStorage.removeItem(TASKS_STORAGE_KEY);
-          setTasks(sampleTasks);
-        }
+  // Use React Query for tasks - same key as home page for sync
+  const { data: tasks = [] } = useQuery({
+    queryKey: ["localTasks"],
+    queryFn: async () => {
+      try {
+        const stored = await AsyncStorage.getItem(TASKS_STORAGE_KEY);
+        return stored ? JSON.parse(stored) : sampleTasks;
+      } catch {
+        return sampleTasks;
       }
-    } catch (error) {
-      console.error("Error loading tasks:", error);
-    }
-  }, []);
+    },
+  });
 
-  // Save tasks to storage
-  const saveTasks = async (newTasks) => {
-    try {
-      await AsyncStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(newTasks));
-    } catch (error) {
-      console.error("Error saving tasks:", error);
-    }
+  // Handle tasks created from modals
+  const handleTasksCreated = async (newTasks) => {
+    const updatedTasks = [...newTasks, ...tasks];
+    await saveTasks(updatedTasks);
+    queryClient.invalidateQueries({ queryKey: ["localTasks"] });
   };
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadTasks();
+    await queryClient.invalidateQueries({ queryKey: ["localTasks"] });
     setRefreshing(false);
-  }, [loadTasks]);
+  }, [queryClient]);
 
-  const toggleTask = (taskId) => {
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    } catch (e) {}
+  const toggleTask = async (taskId) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const newTasks = tasks.map((task) =>
       task.id === taskId ? { ...task, completed: !task.completed } : task
     );
-    setTasks(newTasks);
-    saveTasks(newTasks);
+    await saveTasks(newTasks);
+    queryClient.invalidateQueries({ queryKey: ["localTasks"] });
   };
 
   const deleteTask = (taskId) => {
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    } catch (e) {}
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Alert.alert("Delete Task", "Are you sure you want to delete this task?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Delete",
         style: "destructive",
-        onPress: () => {
+        onPress: async () => {
           const newTasks = tasks.filter((task) => task.id !== taskId);
-          setTasks(newTasks);
-          saveTasks(newTasks);
+          await saveTasks(newTasks);
+          queryClient.invalidateQueries({ queryKey: ["localTasks"] });
         },
       },
     ]);
@@ -139,10 +131,10 @@ export default function LibraryTasksPage() {
         flexDirection: "row",
         alignItems: "center",
         backgroundColor: theme.colors.surface.level1,
-        borderRadius: theme.radius.md,
+        borderRadius: theme.radius.lg,
         borderWidth: 1,
         borderColor: theme.colors.border.subtle,
-        paddingVertical: theme.spacing.sm + 2,
+        paddingVertical: theme.spacing.md,
         paddingHorizontal: theme.spacing.md,
         marginBottom: theme.spacing.sm,
       }}
@@ -153,11 +145,18 @@ export default function LibraryTasksPage() {
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
         {task.completed ? (
-          <CheckCircle2
-            size={20}
-            color={theme.colors.accent.secondary}
-            fill={theme.colors.accent.secondary}
-          />
+          <View
+            style={{
+              width: 20,
+              height: 20,
+              borderRadius: 10,
+              backgroundColor: theme.colors.accent.primary,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Check size={14} color="#FFFFFF" strokeWidth={3} />
+          </View>
         ) : (
           <Circle size={20} color={theme.colors.text.muted} />
         )}
@@ -170,7 +169,7 @@ export default function LibraryTasksPage() {
           numberOfLines={1}
           style={{
             textDecorationLine: task.completed ? "line-through" : "none",
-            opacity: task.completed ? 0.7 : 1,
+            opacity: task.completed ? 0.6 : 1,
           }}
         >
           {task.title}
@@ -294,10 +293,10 @@ export default function LibraryTasksPage() {
         insets={insets}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        title="Tasks"
+        title="To Do"
         showBackButton
         onBackPress={() => router.back()}
-        backLabel="Library"
+        backLabel="Back"
       />
 
       <FlatList

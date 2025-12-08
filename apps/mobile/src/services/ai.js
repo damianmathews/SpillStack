@@ -9,50 +9,54 @@ const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
  * System prompts for different AI operations
  */
 const PROMPTS = {
-  // For Ideas: Create a concise, actionable summary that captures the essence
-  ideaSummary: `You are an expert at distilling ideas into clear, actionable summaries.
+  // For Ideas: Create a concise summary - Elon Musk style
+  ideaSummary: `Summarize this in 1-2 short sentences. Be direct and concise like Elon Musk tweets.
 
-Given a raw idea or thought, create a summary that:
-1. Captures the core concept in 1-2 sentences
-2. Highlights key actionable points
-3. Uses clear, professional language
-4. Is concise but comprehensive (max 150 characters)
+Rules:
+- ONLY use information explicitly stated in the input
+- NEVER add details, examples, or specifics not mentioned
+- NEVER hallucinate or infer things not directly said
+- No fluff words, no filler, no corporate speak
+- Max 120 characters
+- If input is vague, keep summary vague
 
-Return ONLY the summary, no quotes, no labels, no extra text.`,
+Return ONLY the summary text.`,
 
-  // For generating a good title from content
-  ideaTitle: `You are an expert at creating compelling, descriptive titles.
+  // For generating titles - no colons, no AI speak
+  ideaTitle: `Create a short title (2-5 words) for this content.
 
-Given content, create a title that:
-1. Is 3-7 words
-2. Captures the main idea
-3. Is engaging and clear
-4. Uses title case
+Rules:
+- NO colons ever
+- NO generic words like "Exploring", "Understanding", "Journey", "Comprehensive"
+- NO AI-sounding phrases
+- Be specific to the actual content
+- ONLY reference things explicitly mentioned
+- Simple, direct, like a text message subject line
 
-Return ONLY the title, no quotes, no punctuation at end.`,
+Return ONLY the title, no quotes.`,
 
   // For categorizing ideas automatically
-  ideaCategory: `You are an expert at categorizing ideas.
+  ideaCategory: `Categorize this into exactly ONE category.
 
-Categories available:
-- Ideas: New concepts, innovations, app ideas
-- Learning: Educational content, skills to learn, research topics
-- Projects: Actionable projects, things to build
-- Research: Information gathering, articles, studies
-- Personal: Personal life, family, friends, self-improvement
-- Business Ideas: Monetization, startups, business strategies
+Categories:
+- Projects: things to build, development, implementation, coding
+- Research: articles, studies, investigation, learning, education
+- Personal: life, family, health, self, reminders
+- Business Ideas: startups, monetization, business, entrepreneurship
+- Creative: art, design, writing, music, inspiration
 
-Given the content, return ONLY the single best category name from the list above.`,
+Return ONLY the category name, nothing else.`,
 
   // For extracting tags from content
-  ideaTags: `You are an expert at extracting relevant tags from content.
+  ideaTags: `Extract 2-3 tags from this content.
 
-Given content, extract 2-4 relevant tags that:
-1. Are single words or short phrases
-2. Capture key themes, technologies, or topics
-3. Would help with searching/filtering
+Rules:
+- ONLY use words/concepts explicitly in the content
+- NEVER invent or assume tags
+- Single words preferred
+- Lowercase, no hashtags
 
-Return ONLY a comma-separated list of tags, lowercase, no hashtags.`,
+Return comma-separated tags only.`,
 
   // For Tasks: Extract actionable tasks from voice/text input
   taskExtraction: `You are an expert at extracting actionable tasks from natural language.
@@ -124,7 +128,7 @@ export async function processIdea(rawContent) {
   const [title, summary, category, tagsRaw] = await Promise.all([
     callOpenAI(PROMPTS.ideaTitle, rawContent, { maxTokens: 50 }).catch(() => null),
     callOpenAI(PROMPTS.ideaSummary, rawContent, { maxTokens: 200 }).catch(() => null),
-    callOpenAI(PROMPTS.ideaCategory, rawContent, { maxTokens: 20 }).catch(() => "Ideas"),
+    callOpenAI(PROMPTS.ideaCategory, rawContent, { maxTokens: 20 }).catch(() => "Personal"),
     callOpenAI(PROMPTS.ideaTags, rawContent, { maxTokens: 50 }).catch(() => ""),
   ]);
 
@@ -136,7 +140,7 @@ export async function processIdea(rawContent) {
   return {
     title: title || rawContent.split(/[.!?]/)[0].substring(0, 50),
     summary: summary || rawContent.substring(0, 150),
-    category: category || "Ideas",
+    category: category || "Personal",
     tags,
   };
 }

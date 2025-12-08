@@ -194,10 +194,10 @@ export default function LibraryIdeasPage() {
         insets={insets}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        title="Ideas"
+        title="All Ideas"
         showBackButton
         onBackPress={() => router.back()}
-        backLabel="Library"
+        backLabel="Back"
       />
 
       <CategoryFilter

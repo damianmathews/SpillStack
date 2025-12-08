@@ -20,6 +20,7 @@ import { checkDuplicate } from "@/services/ai";
 import { sampleIdeas } from "@/data/sampleData";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
+import { BouncingDotsLoader } from "@/components/LoadingAnimations/BouncingDotsLoader";
 
 export function VoiceModal({ visible, onClose }) {
   const { theme, isDark } = useTheme();
@@ -27,6 +28,8 @@ export function VoiceModal({ visible, onClose }) {
   const [stage, setStage] = useState("idle"); // idle, recording, processing, preview, duplicate
   const [ideaData, setIdeaData] = useState(null); // Full AI-processed data
   const [duplicateIdea, setDuplicateIdea] = useState(null); // If duplicate found
+  const [processingProgress, setProcessingProgress] = useState(0); // 0-1 for water fill
+  const processingIntervalRef = useRef(null);
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const waveAnims = useRef([...Array(5)].map(() => new Animated.Value(0.3))).current;
@@ -93,6 +96,39 @@ export function VoiceModal({ visible, onClose }) {
       setStage("processing");
     }
   }, [isRecording, isTranscribing]);
+
+  // Simulate progress during processing
+  useEffect(() => {
+    if (stage === "processing") {
+      setProcessingProgress(0);
+      // Simulate progress - fast at first, slows down towards end
+      let progress = 0;
+      processingIntervalRef.current = setInterval(() => {
+        progress += (0.95 - progress) * 0.08; // Asymptotic approach to 95%
+        setProcessingProgress(Math.min(progress, 0.95));
+      }, 200);
+    } else {
+      // Clear interval and reset when not processing
+      if (processingIntervalRef.current) {
+        clearInterval(processingIntervalRef.current);
+        processingIntervalRef.current = null;
+      }
+      if (stage === "preview" || stage === "duplicate") {
+        // Complete the fill when done
+        setProcessingProgress(1);
+        // Reset after a moment
+        setTimeout(() => setProcessingProgress(0), 500);
+      } else {
+        setProcessingProgress(0);
+      }
+    }
+
+    return () => {
+      if (processingIntervalRef.current) {
+        clearInterval(processingIntervalRef.current);
+      }
+    };
+  }, [stage]);
 
   // Pulse animation for recording
   useEffect(() => {
@@ -358,27 +394,9 @@ export function VoiceModal({ visible, onClose }) {
               </View>
             )}
 
-            {/* Processing State */}
+            {/* Processing State - Bouncing dots */}
             {stage === "processing" && (
-              <View style={styles.processingContainer}>
-                <ActivityIndicator size="large" color={theme.colors.accent.primary} />
-                <Text
-                  style={[
-                    theme.typography.title,
-                    { color: theme.colors.text.primary, marginTop: theme.spacing.xxl },
-                  ]}
-                >
-                  Transcribing your voice...
-                </Text>
-                <Text
-                  style={[
-                    theme.typography.body,
-                    { color: theme.colors.text.secondary, marginTop: theme.spacing.sm },
-                  ]}
-                >
-                  AI is processing your recording
-                </Text>
-              </View>
+              <BouncingDotsLoader statusText="AI is thinking..." />
             )}
 
             {/* Preview State */}

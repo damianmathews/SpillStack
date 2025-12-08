@@ -17,6 +17,7 @@ import { X, Sparkles, Check, ListTodo, RefreshCw } from "lucide-react-native";
 import { useTheme } from "@/contexts/ThemeContext";
 import { extractTasks } from "@/services/ai";
 import * as Haptics from "expo-haptics";
+import { BouncingDotsLoader } from "@/components/LoadingAnimations/BouncingDotsLoader";
 
 export function TaskTextModal({ visible, onClose, onTasksCreated }) {
   const { theme, isDark } = useTheme();
@@ -204,15 +205,7 @@ export function TaskTextModal({ visible, onClose, onTasksCreated }) {
 
             {/* Processing Stage */}
             {stage === "processing" && (
-              <View style={styles.processingContainer}>
-                <ActivityIndicator size="large" color={theme.colors.secondary} />
-                <Text style={[theme.typography.title3, { color: theme.colors.text, marginTop: theme.spacing.xxl }]}>
-                  Extracting tasks...
-                </Text>
-                <Text style={[theme.typography.subhead, { color: theme.colors.textSecondary, marginTop: theme.spacing.sm }]}>
-                  AI is finding actionable items
-                </Text>
-              </View>
+              <BouncingDotsLoader statusText="Finding your tasks..." />
             )}
 
             {/* Preview Stage */}

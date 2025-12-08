@@ -6,13 +6,14 @@ import { router } from "expo-router";
 import {
   Lightbulb,
   CheckCircle2,
-  BookOpen,
   FolderKanban,
   Search as SearchIcon,
-  Tag,
-  Archive,
   ChevronRight,
   Settings,
+  Briefcase,
+  Heart,
+  Sparkles,
+  Layers,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 
@@ -23,31 +24,15 @@ import { TextModal } from "@/components/Modals/TextModal";
 import { LinkModal } from "@/components/Modals/LinkModal";
 import { AppScreen, AppText } from "@/components/primitives";
 
-// Library categories with their routes and icons
-const libraryCategories = [
+// Ideas categories (everything is an idea)
+const ideaCategories = [
   {
-    id: "ideas",
-    title: "Ideas",
-    subtitle: "All your captured ideas",
-    icon: Lightbulb,
-    color: "#8B5CF6",
+    id: "all",
+    title: "All Ideas",
+    subtitle: "Browse all your captured ideas",
+    icon: Layers,
+    color: "#4F7DFF",
     route: "/(tabs)/library/ideas",
-  },
-  {
-    id: "tasks",
-    title: "Tasks",
-    subtitle: "Your action items and to-dos",
-    icon: CheckCircle2,
-    color: "#22C55E",
-    route: "/(tabs)/library/tasks",
-  },
-  {
-    id: "learning",
-    title: "Learning",
-    subtitle: "Educational notes and insights",
-    icon: BookOpen,
-    color: "#3B82F6",
-    route: "/(tabs)/library/ideas?category=Learning",
   },
   {
     id: "projects",
@@ -65,7 +50,41 @@ const libraryCategories = [
     color: "#F97316",
     route: "/(tabs)/library/ideas?category=Research",
   },
+  {
+    id: "business",
+    title: "Business Ideas",
+    subtitle: "Startup and business concepts",
+    icon: Briefcase,
+    color: "#8B5CF6",
+    route: "/(tabs)/library/ideas?category=Business Ideas",
+  },
+  {
+    id: "personal",
+    title: "Personal",
+    subtitle: "Personal thoughts and reminders",
+    icon: Heart,
+    color: "#EC4899",
+    route: "/(tabs)/library/ideas?category=Personal",
+  },
+  {
+    id: "creative",
+    title: "Creative",
+    subtitle: "Creative ideas and inspiration",
+    icon: Sparkles,
+    color: "#F59E0B",
+    route: "/(tabs)/library/ideas?category=Creative",
+  },
 ];
+
+// Tasks category (standalone)
+const tasksCategory = {
+  id: "tasks",
+  title: "Tasks",
+  subtitle: "Your action items and to-dos",
+  icon: CheckCircle2,
+  color: "#22C55E",
+  route: "/(tabs)/library/tasks",
+};
 
 export default function LibraryScreen() {
   const insets = useSafeAreaInsets();
@@ -81,7 +100,7 @@ export default function LibraryScreen() {
     router.push(category.route);
   };
 
-  // Category Card Component
+  // Category Card Component - compact size
   const CategoryCard = ({ category }) => {
     const Icon = category.icon;
     return (
@@ -89,11 +108,11 @@ export default function LibraryScreen() {
         onPress={() => handleCategoryPress(category)}
         style={{
           backgroundColor: theme.colors.surface.level1,
-          borderRadius: theme.radius.md,
+          borderRadius: theme.radius.sm,
           borderWidth: 1,
           borderColor: theme.colors.border.subtle,
-          padding: theme.spacing.md,
-          marginBottom: theme.spacing.sm,
+          padding: theme.spacing.sm,
+          marginBottom: 6,
           flexDirection: "row",
           alignItems: "center",
         }}
@@ -101,26 +120,26 @@ export default function LibraryScreen() {
       >
         <View
           style={{
-            width: 40,
-            height: 40,
-            borderRadius: theme.radius.sm,
+            width: 32,
+            height: 32,
+            borderRadius: 6,
             backgroundColor: `${category.color}15`,
             alignItems: "center",
             justifyContent: "center",
-            marginRight: theme.spacing.md,
+            marginRight: theme.spacing.sm,
           }}
         >
-          <Icon size={20} color={category.color} />
+          <Icon size={16} color={category.color} />
         </View>
         <View style={{ flex: 1 }}>
-          <AppText variant="body" color="primary" style={{ fontWeight: "500", marginBottom: 2 }}>
+          <AppText variant="caption" color="primary" style={{ fontWeight: "500", fontSize: 14 }}>
             {category.title}
           </AppText>
-          <AppText variant="caption" color="secondary" style={{ fontSize: 12 }}>
+          <AppText variant="caption" color="secondary" style={{ fontSize: 11 }}>
             {category.subtitle}
           </AppText>
         </View>
-        <ChevronRight size={18} color={theme.colors.text.muted} />
+        <ChevronRight size={14} color={theme.colors.text.muted} />
       </TouchableOpacity>
     );
   };
@@ -174,7 +193,7 @@ export default function LibraryScreen() {
         }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Section Label */}
+        {/* IDEAS Section */}
         <AppText
           variant="subtitle"
           color="muted"
@@ -185,15 +204,15 @@ export default function LibraryScreen() {
             letterSpacing: 0.5,
           }}
         >
-          Categories
+          Ideas
         </AppText>
 
-        {/* Category Cards */}
-        {libraryCategories.map((category) => (
+        {/* Idea Category Cards */}
+        {ideaCategories.map((category) => (
           <CategoryCard key={category.id} category={category} />
         ))}
 
-        {/* Additional Options Section */}
+        {/* TASKS Section */}
         <AppText
           variant="subtitle"
           color="muted"
@@ -204,94 +223,11 @@ export default function LibraryScreen() {
             letterSpacing: 0.5,
           }}
         >
-          More
+          Tasks
         </AppText>
 
-        {/* Tags */}
-        <TouchableOpacity
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            // Tags functionality - for now just show ideas
-            router.push("/(tabs)/library/ideas");
-          }}
-          style={{
-            backgroundColor: theme.colors.surface.level1,
-            borderRadius: theme.radius.md,
-            borderWidth: 1,
-            borderColor: theme.colors.border.subtle,
-            padding: theme.spacing.md,
-            marginBottom: theme.spacing.sm,
-            flexDirection: "row",
-            alignItems: "center",
-          }}
-          activeOpacity={0.7}
-        >
-          <View
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: theme.radius.sm,
-              backgroundColor: `${theme.colors.accent.primary}15`,
-              alignItems: "center",
-              justifyContent: "center",
-              marginRight: theme.spacing.md,
-            }}
-          >
-            <Tag size={20} color={theme.colors.accent.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <AppText variant="body" color="primary" style={{ fontWeight: "500", marginBottom: 2 }}>
-              Tags
-            </AppText>
-            <AppText variant="caption" color="secondary" style={{ fontSize: 12 }}>
-              Browse by tags
-            </AppText>
-          </View>
-          <ChevronRight size={18} color={theme.colors.text.muted} />
-        </TouchableOpacity>
-
-        {/* Archive */}
-        <TouchableOpacity
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            // Archive functionality - for now just show ideas
-            router.push("/(tabs)/library/ideas");
-          }}
-          style={{
-            backgroundColor: theme.colors.surface.level1,
-            borderRadius: theme.radius.md,
-            borderWidth: 1,
-            borderColor: theme.colors.border.subtle,
-            padding: theme.spacing.md,
-            marginBottom: theme.spacing.sm,
-            flexDirection: "row",
-            alignItems: "center",
-          }}
-          activeOpacity={0.7}
-        >
-          <View
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: theme.radius.sm,
-              backgroundColor: `${theme.colors.text.muted}15`,
-              alignItems: "center",
-              justifyContent: "center",
-              marginRight: theme.spacing.md,
-            }}
-          >
-            <Archive size={20} color={theme.colors.text.muted} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <AppText variant="body" color="primary" style={{ fontWeight: "500", marginBottom: 2 }}>
-              Archive
-            </AppText>
-            <AppText variant="caption" color="secondary" style={{ fontSize: 12 }}>
-              Archived items
-            </AppText>
-          </View>
-          <ChevronRight size={18} color={theme.colors.text.muted} />
-        </TouchableOpacity>
+        {/* Tasks Category Card */}
+        <CategoryCard category={tasksCategory} />
       </ScrollView>
 
       {/* Floating Action Button */}
