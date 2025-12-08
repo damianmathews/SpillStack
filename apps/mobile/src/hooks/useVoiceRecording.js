@@ -41,10 +41,30 @@ export function useVoiceRecording(onTranscriptionComplete) {
       }
 
       console.log("Setting audio mode...");
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
+      // Retry audio mode setup with delays - handles "app in background" errors
+      // that occur when the app is transitioning from OAuth flows or first launch
+      let audioModeSet = false;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        try {
+          await Audio.setAudioModeAsync({
+            allowsRecordingIOS: true,
+            playsInSilentModeIOS: true,
+          });
+          audioModeSet = true;
+          break;
+        } catch (audioError) {
+          if (audioError.message?.includes("background") && attempt < 4) {
+            console.log(`Audio session not ready, waiting... (attempt ${attempt + 1}/5)`);
+            await new Promise((resolve) => setTimeout(resolve, 500));
+          } else {
+            throw audioError;
+          }
+        }
+      }
+
+      if (!audioModeSet) {
+        throw new Error("Could not activate audio session. Please try again.");
+      }
 
       console.log("Creating recording...");
       const { recording } = await Audio.Recording.createAsync(
@@ -66,13 +86,6 @@ export function useVoiceRecording(onTranscriptionComplete) {
       console.log("Recording started successfully");
       return true;
     } catch (error) {
-      // Handle "app in background" error by retrying after a short delay
-      if (error.message?.includes("background") && retryCount < 3) {
-        console.log(`Audio session not ready, retrying (${retryCount + 1}/3)...`);
-        await new Promise((resolve) => setTimeout(resolve, 300));
-        return startRecording(retryCount + 1);
-      }
-
       console.error("Failed to start recording:", error);
       Alert.alert("Error", `Failed to start recording: ${error.message}`);
       return false;
