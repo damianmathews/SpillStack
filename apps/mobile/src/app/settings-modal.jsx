@@ -321,7 +321,7 @@ export default function SettingsModal() {
             </AppText>
           </View>
           <AppText variant="caption" color="muted">
-            Version 1.0.0
+            Version 1.1
           </AppText>
         </View>
       </ScrollView>

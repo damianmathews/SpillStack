@@ -7,6 +7,8 @@ import {
   Animated,
   StyleSheet,
   ActivityIndicator,
+  Alert,
+  ScrollView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
@@ -161,6 +163,33 @@ export function VoiceModal({ visible, onClose }) {
   };
 
   const handleClose = () => {
+    // If we have unsaved content (preview or duplicate stage), show confirmation
+    if (stage === "preview" || stage === "duplicate") {
+      Alert.alert(
+        "Discard Recording?",
+        "Are you sure you want to exit without saving? Your recording will be lost.",
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+          {
+            text: "Discard",
+            style: "destructive",
+            onPress: () => {
+              if (isRecording) {
+                handleVoiceRecord(); // Stop recording
+              }
+              onClose();
+              setTimeout(resetState, 300);
+            },
+          },
+        ]
+      );
+      return;
+    }
+
+    // If recording, just stop and close (no content to lose yet)
     if (isRecording) {
       handleVoiceRecord(); // Stop recording
     }
@@ -201,8 +230,8 @@ export function VoiceModal({ visible, onClose }) {
   };
 
   const categoryColor = ideaData?.category
-    ? categoryColors[ideaData.category] || theme.colors.primary
-    : theme.colors.primary;
+    ? categoryColors[ideaData.category] || theme.colors.accent.primary
+    : theme.colors.accent.primary;
 
   return (
     <Modal
@@ -224,16 +253,16 @@ export function VoiceModal({ visible, onClose }) {
               style={[
                 styles.iconButton,
                 {
-                  backgroundColor: theme.colors.surface,
+                  backgroundColor: theme.colors.surface.level1,
                   height: theme.componentHeight.iconButton,
                   width: theme.componentHeight.iconButton,
                   borderRadius: theme.componentHeight.iconButton / 2,
                 },
               ]}
             >
-              <X size={20} color={theme.colors.text} strokeWidth={2} />
+              <X size={20} color={theme.colors.text.primary} strokeWidth={2} />
             </TouchableOpacity>
-            <Text style={[theme.typography.headline, { color: theme.colors.text }]}>
+            <Text style={[theme.typography.headline, { color: theme.colors.text.primary }]}>
               {stage === "idle" && "Voice Note"}
               {stage === "recording" && "Recording..."}
               {stage === "processing" && "Processing..."}
@@ -256,8 +285,8 @@ export function VoiceModal({ visible, onClose }) {
                       style={[
                         styles.waveBar,
                         {
-                          backgroundColor: theme.colors.primary,
-                          borderRadius: theme.borderRadius.xs,
+                          backgroundColor: theme.colors.accent.primary,
+                          borderRadius: theme.radius.sm,
                           transform: [{ scaleY: anim }],
                         },
                       ]}
@@ -270,7 +299,7 @@ export function VoiceModal({ visible, onClose }) {
                   style={[
                     styles.timer,
                     {
-                      color: recorderState.showCountdown ? theme.colors.error : theme.colors.text,
+                      color: recorderState.showCountdown ? theme.colors.danger : theme.colors.text.primary,
                       fontVariant: ["tabular-nums"]
                     },
                   ]}
@@ -282,9 +311,9 @@ export function VoiceModal({ visible, onClose }) {
                 {recorderState.showCountdown && (
                   <Text
                     style={[
-                      theme.typography.callout,
+                      theme.typography.body,
                       {
-                        color: theme.colors.error,
+                        color: theme.colors.danger,
                         marginBottom: theme.spacing.md,
                         fontWeight: "600",
                       },
@@ -304,8 +333,8 @@ export function VoiceModal({ visible, onClose }) {
                       styles.recordButton,
                       {
                         backgroundColor: stage === "recording"
-                          ? theme.colors.error
-                          : theme.colors.primary,
+                          ? theme.colors.danger
+                          : theme.colors.accent.primary,
                         transform: [{ scale: pulseAnim }],
                       },
                     ]}
@@ -320,8 +349,8 @@ export function VoiceModal({ visible, onClose }) {
 
                 <Text
                   style={[
-                    theme.typography.callout,
-                    { color: theme.colors.textSecondary, marginTop: theme.spacing.lg },
+                    theme.typography.body,
+                    { color: theme.colors.text.secondary, marginTop: theme.spacing.lg },
                   ]}
                 >
                   {stage === "idle" ? "Tap to start recording" : "Tap to stop"}
@@ -332,19 +361,19 @@ export function VoiceModal({ visible, onClose }) {
             {/* Processing State */}
             {stage === "processing" && (
               <View style={styles.processingContainer}>
-                <ActivityIndicator size="large" color={theme.colors.primary} />
+                <ActivityIndicator size="large" color={theme.colors.accent.primary} />
                 <Text
                   style={[
-                    theme.typography.title3,
-                    { color: theme.colors.text, marginTop: theme.spacing.xxl },
+                    theme.typography.title,
+                    { color: theme.colors.text.primary, marginTop: theme.spacing.xxl },
                   ]}
                 >
                   Transcribing your voice...
                 </Text>
                 <Text
                   style={[
-                    theme.typography.callout,
-                    { color: theme.colors.textSecondary, marginTop: theme.spacing.sm },
+                    theme.typography.body,
+                    { color: theme.colors.text.secondary, marginTop: theme.spacing.sm },
                   ]}
                 >
                   AI is processing your recording
@@ -354,12 +383,16 @@ export function VoiceModal({ visible, onClose }) {
 
             {/* Preview State */}
             {stage === "preview" && ideaData && (
-              <View style={styles.previewContainer}>
+              <ScrollView
+                style={styles.previewScrollView}
+                contentContainerStyle={styles.previewContainer}
+                showsVerticalScrollIndicator={false}
+              >
                 {/* Title */}
                 <Text
                   style={[
-                    theme.typography.title2,
-                    { color: theme.colors.text, textAlign: "center", marginBottom: theme.spacing.md },
+                    theme.typography.title,
+                    { color: theme.colors.text.primary, textAlign: "center", marginBottom: theme.spacing.md },
                   ]}
                 >
                   {ideaData.title}
@@ -371,7 +404,7 @@ export function VoiceModal({ visible, onClose }) {
                     styles.categoryBadge,
                     {
                       backgroundColor: `${categoryColor}20`,
-                      borderRadius: theme.borderRadius.full,
+                      borderRadius: theme.radius.pill,
                       paddingHorizontal: theme.spacing.lg,
                       paddingVertical: theme.spacing.sm,
                       marginBottom: theme.spacing.xl,
@@ -380,7 +413,7 @@ export function VoiceModal({ visible, onClose }) {
                 >
                   <Text
                     style={[
-                      theme.typography.subheadMedium,
+                      theme.typography.bodyMedium,
                       { color: categoryColor },
                     ]}
                   >
@@ -393,9 +426,9 @@ export function VoiceModal({ visible, onClose }) {
                   style={[
                     styles.previewCard,
                     {
-                      backgroundColor: theme.colors.card,
-                      borderColor: theme.colors.border,
-                      borderRadius: theme.borderRadius.lg,
+                      backgroundColor: theme.colors.surface.level1,
+                      borderColor: theme.colors.border.subtle,
+                      borderRadius: theme.radius.lg,
                       padding: theme.spacing.xl,
                       marginBottom: theme.spacing.lg,
                     },
@@ -403,13 +436,13 @@ export function VoiceModal({ visible, onClose }) {
                 >
                   <Text
                     style={[
-                      theme.typography.label,
-                      { color: theme.colors.textSecondary, marginBottom: theme.spacing.md },
+                      theme.typography.caption,
+                      { color: theme.colors.text.muted, marginBottom: theme.spacing.md, textTransform: "uppercase", letterSpacing: 0.5 },
                     ]}
                   >
                     SUMMARY
                   </Text>
-                  <Text style={[theme.typography.body, { color: theme.colors.text }]}>
+                  <Text style={[theme.typography.body, { color: theme.colors.text.primary }]}>
                     {ideaData.summary}
                   </Text>
                 </View>
@@ -423,8 +456,10 @@ export function VoiceModal({ visible, onClose }) {
                         style={[
                           styles.tag,
                           {
-                            backgroundColor: theme.colors.surface,
-                            borderRadius: theme.borderRadius.full,
+                            backgroundColor: theme.colors.surface.level2,
+                            borderColor: theme.colors.border.subtle,
+                            borderWidth: 1,
+                            borderRadius: theme.radius.pill,
                             paddingHorizontal: theme.spacing.md,
                             paddingVertical: theme.spacing.sm,
                           },
@@ -432,8 +467,8 @@ export function VoiceModal({ visible, onClose }) {
                       >
                         <Text
                           style={[
-                            theme.typography.footnote,
-                            { color: theme.colors.textSecondary },
+                            theme.typography.caption,
+                            { color: theme.colors.text.secondary },
                           ]}
                         >
                           #{tag}
@@ -449,20 +484,20 @@ export function VoiceModal({ visible, onClose }) {
                     style={[
                       styles.actionButton,
                       {
-                        backgroundColor: theme.colors.surface,
-                        borderColor: theme.colors.border,
+                        backgroundColor: theme.colors.surface.level1,
+                        borderColor: theme.colors.border.subtle,
                         borderWidth: 1,
-                        borderRadius: theme.borderRadius.md,
+                        borderRadius: theme.radius.md,
                         height: theme.componentHeight.button,
                       },
                     ]}
                     onPress={handleRetry}
                   >
-                    <RefreshCw size={18} color={theme.colors.text} strokeWidth={2} />
+                    <RefreshCw size={18} color={theme.colors.text.primary} strokeWidth={2} />
                     <Text
                       style={[
                         theme.typography.bodyMedium,
-                        { color: theme.colors.text, marginLeft: theme.spacing.sm },
+                        { color: theme.colors.text.primary, marginLeft: theme.spacing.sm },
                       ]}
                     >
                       Retry
@@ -473,8 +508,8 @@ export function VoiceModal({ visible, onClose }) {
                     style={[
                       styles.actionButton,
                       {
-                        backgroundColor: theme.colors.primary,
-                        borderRadius: theme.borderRadius.md,
+                        backgroundColor: theme.colors.accent.primary,
+                        borderRadius: theme.radius.md,
                         height: theme.componentHeight.button,
                       },
                     ]}
@@ -498,7 +533,7 @@ export function VoiceModal({ visible, onClose }) {
                     )}
                   </TouchableOpacity>
                 </View>
-              </View>
+              </ScrollView>
             )}
 
             {/* Duplicate Detection State */}
@@ -522,16 +557,16 @@ export function VoiceModal({ visible, onClose }) {
 
                 <Text
                   style={[
-                    theme.typography.title2,
-                    { color: theme.colors.text, textAlign: "center", marginBottom: theme.spacing.sm },
+                    theme.typography.title,
+                    { color: theme.colors.text.primary, textAlign: "center", marginBottom: theme.spacing.sm },
                   ]}
                 >
                   Similar Idea Found
                 </Text>
                 <Text
                   style={[
-                    theme.typography.callout,
-                    { color: theme.colors.textSecondary, textAlign: "center", marginBottom: theme.spacing.xxl },
+                    theme.typography.body,
+                    { color: theme.colors.text.secondary, textAlign: "center", marginBottom: theme.spacing.xxl },
                   ]}
                 >
                   This looks like something you've already captured
@@ -542,10 +577,10 @@ export function VoiceModal({ visible, onClose }) {
                   style={[
                     styles.previewCard,
                     {
-                      backgroundColor: theme.colors.card,
+                      backgroundColor: theme.colors.surface.level1,
                       borderColor: theme.colors.warning,
                       borderWidth: 2,
-                      borderRadius: theme.borderRadius.lg,
+                      borderRadius: theme.radius.lg,
                       padding: theme.spacing.xl,
                       marginBottom: theme.spacing.lg,
                     },
@@ -553,8 +588,8 @@ export function VoiceModal({ visible, onClose }) {
                 >
                   <Text
                     style={[
-                      theme.typography.label,
-                      { color: theme.colors.warning, marginBottom: theme.spacing.md },
+                      theme.typography.caption,
+                      { color: theme.colors.warning, marginBottom: theme.spacing.md, textTransform: "uppercase", letterSpacing: 0.5 },
                     ]}
                   >
                     EXISTING IDEA
@@ -562,13 +597,13 @@ export function VoiceModal({ visible, onClose }) {
                   <Text
                     style={[
                       theme.typography.headline,
-                      { color: theme.colors.text, marginBottom: theme.spacing.sm },
+                      { color: theme.colors.text.primary, marginBottom: theme.spacing.sm },
                     ]}
                   >
                     {duplicateIdea.title}
                   </Text>
                   <Text
-                    style={[theme.typography.callout, { color: theme.colors.textSecondary }]}
+                    style={[theme.typography.body, { color: theme.colors.text.secondary }]}
                     numberOfLines={3}
                   >
                     {duplicateIdea.summary || duplicateIdea.content}
@@ -581,20 +616,20 @@ export function VoiceModal({ visible, onClose }) {
                     style={[
                       styles.actionButton,
                       {
-                        backgroundColor: theme.colors.surface,
-                        borderColor: theme.colors.border,
+                        backgroundColor: theme.colors.surface.level1,
+                        borderColor: theme.colors.border.subtle,
                         borderWidth: 1,
-                        borderRadius: theme.borderRadius.md,
+                        borderRadius: theme.radius.md,
                         height: theme.componentHeight.button,
                       },
                     ]}
                     onPress={handleSaveAnyway}
                   >
-                    <GitMerge size={18} color={theme.colors.text} strokeWidth={2} />
+                    <GitMerge size={18} color={theme.colors.text.primary} strokeWidth={2} />
                     <Text
                       style={[
                         theme.typography.bodyMedium,
-                        { color: theme.colors.text, marginLeft: theme.spacing.sm },
+                        { color: theme.colors.text.primary, marginLeft: theme.spacing.sm },
                       ]}
                     >
                       Save Anyway
@@ -605,8 +640,8 @@ export function VoiceModal({ visible, onClose }) {
                     style={[
                       styles.actionButton,
                       {
-                        backgroundColor: theme.colors.primary,
-                        borderRadius: theme.borderRadius.md,
+                        backgroundColor: theme.colors.accent.primary,
+                        borderRadius: theme.radius.md,
                         height: theme.componentHeight.button,
                       },
                     ]}
@@ -682,9 +717,14 @@ const styles = StyleSheet.create({
   processingContainer: {
     alignItems: "center",
   },
+  previewScrollView: {
+    flex: 1,
+    width: "100%",
+  },
   previewContainer: {
     width: "100%",
     alignItems: "center",
+    paddingBottom: 40,
   },
   categoryBadge: {
     alignSelf: "center",

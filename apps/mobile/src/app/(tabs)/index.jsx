@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   FlatList,
@@ -19,7 +19,7 @@ import {
   Sparkles,
   ChevronRight,
 } from "lucide-react-native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
 
 import { useTheme } from "@/contexts/ThemeContext";
@@ -51,10 +51,19 @@ export default function HomePage() {
   const queryClient = useQueryClient();
   const { theme, isDark } = useTheme();
   const { user } = useFirebaseAuth();
+  const { tag: tagParam } = useLocalSearchParams();
 
   // State
   const [searchQuery, setSearchQuery] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [activeTag, setActiveTag] = useState(null);
+
+  // Set active tag from navigation params
+  useEffect(() => {
+    if (tagParam) {
+      setActiveTag(tagParam);
+    }
+  }, [tagParam]);
 
   // Modal states
   const [showVoiceModal, setShowVoiceModal] = useState(false);
@@ -86,8 +95,13 @@ export default function HomePage() {
   const ideas = apiIdeas.length > 0 ? apiIdeas : allIdeas;
   const tasks = localTasks;
 
-  // Filter by search query (global search across all content)
+  // Filter by search query and active tag (global search across all content)
   const filteredIdeas = ideas.filter((idea) => {
+    // First filter by active tag if present
+    if (activeTag && !idea.tags?.some((t) => t.toLowerCase() === activeTag.toLowerCase())) {
+      return false;
+    }
+    // Then filter by search query if present
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -252,17 +266,17 @@ export default function HomePage() {
     >
       <TouchableOpacity
         onPress={() => toggleTask(task.id)}
-        style={{ marginRight: theme.spacing.md }}
+        style={{ marginRight: theme.spacing.sm }}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
         {task.completed ? (
           <CheckCircle2
-            size={22}
+            size={20}
             color={theme.colors.accent.secondary}
             fill={theme.colors.accent.secondary}
           />
         ) : (
-          <Circle size={22} color={theme.colors.text.muted} />
+          <Circle size={20} color={theme.colors.text.muted} />
         )}
       </TouchableOpacity>
       <TouchableOpacity
@@ -273,20 +287,22 @@ export default function HomePage() {
         style={{ flex: 1, flexDirection: "row", alignItems: "center" }}
         activeOpacity={0.7}
       >
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, marginRight: theme.spacing.md }}>
           <AppText
-            variant="body"
+            variant="caption"
             color={task.completed ? "muted" : "primary"}
             numberOfLines={1}
+            ellipsizeMode="tail"
             style={{
               textDecorationLine: task.completed ? "line-through" : "none",
               opacity: task.completed ? 0.7 : 1,
+              fontSize: 14,
             }}
           >
             {task.title}
           </AppText>
         </View>
-        <AppText variant="caption" color="muted">
+        <AppText variant="caption" color="muted" style={{ fontSize: 12, flexShrink: 0 }}>
           {formatDate(task.created_at)}
         </AppText>
       </TouchableOpacity>
@@ -302,12 +318,16 @@ export default function HomePage() {
       }}
     >
       <AppText variant="body" color="secondary" style={{ textAlign: "center" }}>
-        No results found for "{searchQuery}"
+        {activeTag && searchQuery
+          ? `No results found for "${searchQuery}" with tag #${activeTag}`
+          : activeTag
+          ? `No ideas found with tag #${activeTag}`
+          : `No results found for "${searchQuery}"`}
       </AppText>
     </View>
   );
 
-  const isSearching = searchQuery.length > 0;
+  const isSearching = searchQuery.length > 0 || activeTag;
   const hasSearchResults = filteredIdeas.length > 0 || filteredTasks.length > 0;
 
   return (
@@ -319,6 +339,8 @@ export default function HomePage() {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         onSettingsPress={() => router.push("/settings-modal")}
+        activeTag={activeTag}
+        onClearTag={() => setActiveTag(null)}
       />
 
       <ScrollView

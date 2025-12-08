@@ -6,7 +6,7 @@ import { useFirebaseAuth } from "@/contexts/AuthContext";
 import { AppText } from "@/components/primitives";
 import * as Haptics from "expo-haptics";
 
-export function HomeHeader({ insets, searchQuery, onSearchChange, onSettingsPress }) {
+export function HomeHeader({ insets, searchQuery, onSearchChange, onSettingsPress, activeTag, onClearTag }) {
   const { theme, isDark } = useTheme();
   const { user } = useFirebaseAuth();
 
@@ -21,41 +21,20 @@ export function HomeHeader({ insets, searchQuery, onSearchChange, onSettingsPres
   return (
     <View
       style={{
-        paddingTop: insets.top + theme.spacing.md,
-        paddingBottom: theme.spacing.lg,
+        paddingTop: insets.top,
+        paddingBottom: theme.spacing.sm,
         paddingHorizontal: theme.spacing.xl,
       }}
     >
-      {/* Top row: Logo + Welcome on left, Settings on right */}
+      {/* Top row: Settings button on right */}
       <View
         style={{
           flexDirection: "row",
           alignItems: "flex-start",
-          justifyContent: "space-between",
-          marginBottom: theme.spacing.lg,
+          justifyContent: "flex-end",
+          marginBottom: 0,
         }}
       >
-        {/* Logo and Welcome text stacked on left */}
-        <View style={{ flex: 1, alignItems: "flex-start" }}>
-          <Image
-            source={
-              isDark
-                ? require("../../../assets/spillstack-logo-white.png")
-                : require("../../../assets/spillstack-logo-black.png")
-            }
-            style={{
-              width: 360,
-              height: 90,
-              marginLeft: -20,
-              marginBottom: theme.spacing.xs,
-            }}
-            resizeMode="contain"
-          />
-          <AppText variant="caption" style={{ color: "#FFFFFF" }}>
-            Welcome back, {firstName}
-          </AppText>
-        </View>
-
         {/* Settings button */}
         <TouchableOpacity
           onPress={onSettingsPress}
@@ -68,12 +47,30 @@ export function HomeHeader({ insets, searchQuery, onSearchChange, onSettingsPres
             justifyContent: "center",
             borderWidth: 1,
             borderColor: theme.colors.border.subtle,
-            marginTop: theme.spacing.sm,
           }}
           activeOpacity={0.7}
         >
           <Settings size={18} color={theme.colors.text.secondary} />
         </TouchableOpacity>
+      </View>
+
+      {/* Centered Logo */}
+      <View style={{ alignItems: "center", marginBottom: theme.spacing.sm, marginTop: -10 }}>
+        <Image
+          source={
+            isDark
+              ? require("../../../assets/spillstack-logo-white.png")
+              : require("../../../assets/spillstack-logo-black.png")
+          }
+          style={{
+            width: 660,
+            height: 165,
+          }}
+          resizeMode="contain"
+        />
+        <AppText variant="subtitle" style={{ color: "#FFFFFF", fontWeight: "600", marginTop: theme.spacing.xs }}>
+          Welcome back, {firstName}
+        </AppText>
       </View>
 
       {/* Search Bar */}
@@ -90,10 +87,37 @@ export function HomeHeader({ insets, searchQuery, onSearchChange, onSettingsPres
         }}
       >
         <Search size={18} color={theme.colors.text.muted} strokeWidth={2} />
+
+        {/* Active Tag Chip */}
+        {activeTag && (
+          <TouchableOpacity
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onClearTag?.();
+            }}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: theme.colors.accent.softBg,
+              paddingHorizontal: theme.spacing.sm,
+              paddingVertical: theme.spacing.xs,
+              borderRadius: theme.radius.pill,
+              marginLeft: theme.spacing.sm,
+              gap: theme.spacing.xs,
+            }}
+            activeOpacity={0.7}
+          >
+            <AppText variant="caption" style={{ color: theme.colors.accent.primary }}>
+              #{activeTag}
+            </AppText>
+            <X size={12} color={theme.colors.accent.primary} strokeWidth={2} />
+          </TouchableOpacity>
+        )}
+
         <TextInput
           value={searchQuery}
           onChangeText={onSearchChange}
-          placeholder="Search everything..."
+          placeholder={activeTag ? "Add more filters..." : "Search everything..."}
           placeholderTextColor={theme.colors.text.muted}
           returnKeyType="search"
           onSubmitEditing={Keyboard.dismiss}

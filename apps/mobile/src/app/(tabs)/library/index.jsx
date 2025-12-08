@@ -89,11 +89,11 @@ export default function LibraryScreen() {
         onPress={() => handleCategoryPress(category)}
         style={{
           backgroundColor: theme.colors.surface.level1,
-          borderRadius: theme.radius.lg,
+          borderRadius: theme.radius.md,
           borderWidth: 1,
           borderColor: theme.colors.border.subtle,
-          padding: theme.spacing.lg,
-          marginBottom: theme.spacing.md,
+          padding: theme.spacing.md,
+          marginBottom: theme.spacing.sm,
           flexDirection: "row",
           alignItems: "center",
         }}
@@ -101,26 +101,26 @@ export default function LibraryScreen() {
       >
         <View
           style={{
-            width: 48,
-            height: 48,
-            borderRadius: theme.radius.md,
+            width: 40,
+            height: 40,
+            borderRadius: theme.radius.sm,
             backgroundColor: `${category.color}15`,
             alignItems: "center",
             justifyContent: "center",
-            marginRight: theme.spacing.lg,
+            marginRight: theme.spacing.md,
           }}
         >
-          <Icon size={24} color={category.color} />
+          <Icon size={20} color={category.color} />
         </View>
         <View style={{ flex: 1 }}>
-          <AppText variant="subtitle" color="primary" style={{ marginBottom: theme.spacing.xs }}>
+          <AppText variant="body" color="primary" style={{ fontWeight: "500", marginBottom: 2 }}>
             {category.title}
           </AppText>
-          <AppText variant="caption" color="secondary">
+          <AppText variant="caption" color="secondary" style={{ fontSize: 12 }}>
             {category.subtitle}
           </AppText>
         </View>
-        <ChevronRight size={20} color={theme.colors.text.muted} />
+        <ChevronRight size={18} color={theme.colors.text.muted} />
       </TouchableOpacity>
     );
   };
@@ -216,11 +216,11 @@ export default function LibraryScreen() {
           }}
           style={{
             backgroundColor: theme.colors.surface.level1,
-            borderRadius: theme.radius.lg,
+            borderRadius: theme.radius.md,
             borderWidth: 1,
             borderColor: theme.colors.border.subtle,
-            padding: theme.spacing.lg,
-            marginBottom: theme.spacing.md,
+            padding: theme.spacing.md,
+            marginBottom: theme.spacing.sm,
             flexDirection: "row",
             alignItems: "center",
           }}
@@ -228,26 +228,26 @@ export default function LibraryScreen() {
         >
           <View
             style={{
-              width: 48,
-              height: 48,
-              borderRadius: theme.radius.md,
+              width: 40,
+              height: 40,
+              borderRadius: theme.radius.sm,
               backgroundColor: `${theme.colors.accent.primary}15`,
               alignItems: "center",
               justifyContent: "center",
-              marginRight: theme.spacing.lg,
+              marginRight: theme.spacing.md,
             }}
           >
-            <Tag size={24} color={theme.colors.accent.primary} />
+            <Tag size={20} color={theme.colors.accent.primary} />
           </View>
           <View style={{ flex: 1 }}>
-            <AppText variant="subtitle" color="primary" style={{ marginBottom: theme.spacing.xs }}>
+            <AppText variant="body" color="primary" style={{ fontWeight: "500", marginBottom: 2 }}>
               Tags
             </AppText>
-            <AppText variant="caption" color="secondary">
+            <AppText variant="caption" color="secondary" style={{ fontSize: 12 }}>
               Browse by tags
             </AppText>
           </View>
-          <ChevronRight size={20} color={theme.colors.text.muted} />
+          <ChevronRight size={18} color={theme.colors.text.muted} />
         </TouchableOpacity>
 
         {/* Archive */}
@@ -259,11 +259,11 @@ export default function LibraryScreen() {
           }}
           style={{
             backgroundColor: theme.colors.surface.level1,
-            borderRadius: theme.radius.lg,
+            borderRadius: theme.radius.md,
             borderWidth: 1,
             borderColor: theme.colors.border.subtle,
-            padding: theme.spacing.lg,
-            marginBottom: theme.spacing.md,
+            padding: theme.spacing.md,
+            marginBottom: theme.spacing.sm,
             flexDirection: "row",
             alignItems: "center",
           }}
@@ -271,26 +271,26 @@ export default function LibraryScreen() {
         >
           <View
             style={{
-              width: 48,
-              height: 48,
-              borderRadius: theme.radius.md,
+              width: 40,
+              height: 40,
+              borderRadius: theme.radius.sm,
               backgroundColor: `${theme.colors.text.muted}15`,
               alignItems: "center",
               justifyContent: "center",
-              marginRight: theme.spacing.lg,
+              marginRight: theme.spacing.md,
             }}
           >
-            <Archive size={24} color={theme.colors.text.muted} />
+            <Archive size={20} color={theme.colors.text.muted} />
           </View>
           <View style={{ flex: 1 }}>
-            <AppText variant="subtitle" color="primary" style={{ marginBottom: theme.spacing.xs }}>
+            <AppText variant="body" color="primary" style={{ fontWeight: "500", marginBottom: 2 }}>
               Archive
             </AppText>
-            <AppText variant="caption" color="secondary">
+            <AppText variant="caption" color="secondary" style={{ fontSize: 12 }}>
               Archived items
             </AppText>
           </View>
-          <ChevronRight size={20} color={theme.colors.text.muted} />
+          <ChevronRight size={18} color={theme.colors.text.muted} />
         </TouchableOpacity>
       </ScrollView>
 

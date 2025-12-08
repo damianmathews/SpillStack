@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
@@ -72,6 +73,32 @@ export function TextModal({ visible, onClose }) {
   };
 
   const handleClose = () => {
+    // If there's text entered, show confirmation
+    if (text.trim()) {
+      Alert.alert(
+        "Discard Idea?",
+        "Are you sure you want to exit without saving? Your text will be lost.",
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+          {
+            text: "Discard",
+            style: "destructive",
+            onPress: () => {
+              onClose();
+              setTimeout(() => {
+                setText("");
+                setCharCount(0);
+              }, 300);
+            },
+          },
+        ]
+      );
+      return;
+    }
+
     onClose();
     setTimeout(() => {
       setText("");
@@ -105,16 +132,16 @@ export function TextModal({ visible, onClose }) {
                 style={[
                   styles.iconButton,
                   {
-                    backgroundColor: theme.colors.surface,
+                    backgroundColor: theme.colors.surface.level1,
                     height: theme.componentHeight.iconButton,
                     width: theme.componentHeight.iconButton,
                     borderRadius: theme.componentHeight.iconButton / 2,
                   },
                 ]}
               >
-                <X size={20} color={theme.colors.text} strokeWidth={2} />
+                <X size={20} color={theme.colors.text.primary} strokeWidth={2} />
               </TouchableOpacity>
-              <Text style={[theme.typography.headline, { color: theme.colors.text }]}>
+              <Text style={[theme.typography.headline, { color: theme.colors.text.primary }]}>
                 {isProcessing ? "Processing..." : "New Idea"}
               </Text>
               <TouchableOpacity
@@ -124,8 +151,8 @@ export function TextModal({ visible, onClose }) {
                   styles.iconButton,
                   {
                     backgroundColor: text.trim() && !isSubmitting
-                      ? theme.colors.primary
-                      : theme.colors.surface,
+                      ? theme.colors.accent.primary
+                      : theme.colors.surface.level1,
                     height: theme.componentHeight.iconButton,
                     width: theme.componentHeight.iconButton,
                     borderRadius: theme.componentHeight.iconButton / 2,
@@ -135,12 +162,12 @@ export function TextModal({ visible, onClose }) {
                 {isSubmitting ? (
                   <ActivityIndicator
                     size="small"
-                    color={text.trim() ? "#FFFFFF" : theme.colors.textTertiary}
+                    color={text.trim() ? "#FFFFFF" : theme.colors.text.muted}
                   />
                 ) : (
                   <Check
                     size={20}
-                    color={text.trim() ? "#FFFFFF" : theme.colors.textTertiary}
+                    color={text.trim() ? "#FFFFFF" : theme.colors.text.muted}
                     strokeWidth={2}
                   />
                 )}
@@ -160,9 +187,9 @@ export function TextModal({ visible, onClose }) {
                 style={[
                   styles.inputContainer,
                   {
-                    backgroundColor: theme.colors.card,
-                    borderColor: theme.colors.border,
-                    borderRadius: theme.borderRadius.lg,
+                    backgroundColor: theme.colors.surface.level1,
+                    borderColor: theme.colors.border.subtle,
+                    borderRadius: theme.radius.lg,
                     padding: theme.spacing.lg,
                   },
                 ]}
@@ -171,11 +198,11 @@ export function TextModal({ visible, onClose }) {
                   value={text}
                   onChangeText={handleTextChange}
                   placeholder="What's on your mind?"
-                  placeholderTextColor={theme.colors.textTertiary}
+                  placeholderTextColor={theme.colors.text.muted}
                   style={[
                     theme.typography.body,
                     styles.textInput,
-                    { color: theme.colors.text },
+                    { color: theme.colors.text.primary },
                   ]}
                   multiline
                   autoFocus
@@ -195,18 +222,18 @@ export function TextModal({ visible, onClose }) {
                 ]}
               >
                 <View style={styles.aiHint}>
-                  <Sparkles size={14} color={theme.colors.primary} strokeWidth={2} />
+                  <Sparkles size={14} color={theme.colors.accent.primary} strokeWidth={2} />
                   <Text
                     style={[
-                      theme.typography.footnote,
-                      { color: theme.colors.textSecondary, marginLeft: theme.spacing.sm },
+                      theme.typography.caption,
+                      { color: theme.colors.text.secondary, marginLeft: theme.spacing.sm },
                     ]}
                   >
                     AI will create title, summary & tags
                   </Text>
                 </View>
                 <Text
-                  style={[theme.typography.footnote, { color: theme.colors.textTertiary }]}
+                  style={[theme.typography.caption, { color: theme.colors.text.muted }]}
                 >
                   {charCount} characters
                 </Text>

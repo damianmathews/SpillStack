@@ -35,16 +35,16 @@ export function LinkModal({ visible, onClose }) {
               style={[
                 styles.iconButton,
                 {
-                  backgroundColor: theme.colors.surface,
+                  backgroundColor: theme.colors.surface.level1,
                   height: theme.componentHeight.iconButton,
                   width: theme.componentHeight.iconButton,
                   borderRadius: theme.componentHeight.iconButton / 2,
                 },
               ]}
             >
-              <X size={20} color={theme.colors.text} strokeWidth={2} />
+              <X size={20} color={theme.colors.text.primary} strokeWidth={2} />
             </TouchableOpacity>
-            <Text style={[theme.typography.headline, { color: theme.colors.text }]}>
+            <Text style={[theme.typography.headline, { color: theme.colors.text.primary }]}>
               Save Link
             </Text>
             <View style={{ width: theme.componentHeight.iconButton }} />
@@ -56,10 +56,10 @@ export function LinkModal({ visible, onClose }) {
               style={[
                 styles.comingSoonCard,
                 {
-                  backgroundColor: theme.colors.card,
-                  borderColor: theme.colors.border,
-                  borderRadius: theme.borderRadius.xl,
-                  padding: theme.spacing.xxxl,
+                  backgroundColor: theme.colors.surface.level1,
+                  borderColor: theme.colors.border.subtle,
+                  borderRadius: theme.radius.lg,
+                  padding: theme.spacing.xxl,
                 },
               ]}
             >
@@ -67,7 +67,7 @@ export function LinkModal({ visible, onClose }) {
                 style={[
                   styles.iconContainer,
                   {
-                    backgroundColor: theme.colors.surface,
+                    backgroundColor: theme.colors.surface.level2,
                     width: 72,
                     height: 72,
                     borderRadius: 36,
@@ -75,7 +75,7 @@ export function LinkModal({ visible, onClose }) {
                   },
                 ]}
               >
-                <Link size={32} color={theme.colors.info} strokeWidth={2} />
+                <Link size={32} color={theme.colors.accent.primary} strokeWidth={2} />
               </View>
 
               <View
@@ -83,7 +83,7 @@ export function LinkModal({ visible, onClose }) {
                   styles.badge,
                   {
                     backgroundColor: `${theme.colors.warning}15`,
-                    borderRadius: theme.borderRadius.md,
+                    borderRadius: theme.radius.md,
                     paddingHorizontal: theme.spacing.md,
                     paddingVertical: theme.spacing.xs,
                     marginBottom: theme.spacing.lg,
@@ -93,8 +93,8 @@ export function LinkModal({ visible, onClose }) {
                 <Clock size={12} color={theme.colors.warning} strokeWidth={2} />
                 <Text
                   style={[
-                    theme.typography.caption1Medium,
-                    { color: theme.colors.warning, marginLeft: theme.spacing.xs },
+                    theme.typography.caption,
+                    { color: theme.colors.warning, marginLeft: theme.spacing.xs, fontWeight: "500" },
                   ]}
                 >
                   Coming Soon
@@ -103,8 +103,8 @@ export function LinkModal({ visible, onClose }) {
 
               <Text
                 style={[
-                  theme.typography.title2,
-                  { color: theme.colors.text, marginBottom: theme.spacing.md },
+                  theme.typography.title,
+                  { color: theme.colors.text.primary, marginBottom: theme.spacing.md },
                 ]}
               >
                 Link Capture
@@ -112,9 +112,9 @@ export function LinkModal({ visible, onClose }) {
 
               <Text
                 style={[
-                  theme.typography.callout,
+                  theme.typography.body,
                   {
-                    color: theme.colors.textSecondary,
+                    color: theme.colors.text.secondary,
                     textAlign: "center",
                     marginBottom: theme.spacing.xxl,
                   },
@@ -136,7 +136,7 @@ export function LinkModal({ visible, onClose }) {
                       style={[
                         styles.featureDot,
                         {
-                          backgroundColor: theme.colors.primary,
+                          backgroundColor: theme.colors.accent.primary,
                           width: 6,
                           height: 6,
                           borderRadius: 3,
@@ -145,8 +145,8 @@ export function LinkModal({ visible, onClose }) {
                     />
                     <Text
                       style={[
-                        theme.typography.subhead,
-                        { color: theme.colors.textSecondary, marginLeft: theme.spacing.md },
+                        theme.typography.body,
+                        { color: theme.colors.text.secondary, marginLeft: theme.spacing.md },
                       ]}
                     >
                       {feature}
@@ -160,16 +160,16 @@ export function LinkModal({ visible, onClose }) {
               style={[
                 styles.closeFullButton,
                 {
-                  backgroundColor: theme.colors.surface,
-                  borderColor: theme.colors.border,
-                  borderRadius: theme.borderRadius.md,
+                  backgroundColor: theme.colors.surface.level1,
+                  borderColor: theme.colors.border.subtle,
+                  borderRadius: theme.radius.md,
                   height: theme.componentHeight.button,
                   marginTop: theme.spacing.xl,
                 },
               ]}
               onPress={onClose}
             >
-              <Text style={[theme.typography.bodyMedium, { color: theme.colors.text }]}>
+              <Text style={[theme.typography.bodyMedium, { color: theme.colors.text.primary }]}>
                 Got it
               </Text>
             </TouchableOpacity>

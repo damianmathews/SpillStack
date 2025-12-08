@@ -432,8 +432,15 @@ export default function IdeaDetailScreen() {
               {(isEditing ? editedTags : idea.tags || []).map((tag, index) => (
                 <TouchableOpacity
                   key={index}
-                  onPress={() => isEditing && removeTag(tag)}
-                  disabled={!isEditing}
+                  onPress={() => {
+                    if (isEditing) {
+                      removeTag(tag);
+                    } else {
+                      // Navigate to home with tag filter
+                      try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (e) {}
+                      router.push({ pathname: "/(tabs)", params: { tag } });
+                    }
+                  }}
                   style={{
                     backgroundColor: theme.colors.accent.softBg,
                     paddingHorizontal: theme.spacing.md,

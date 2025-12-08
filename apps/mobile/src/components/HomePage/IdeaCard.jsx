@@ -62,7 +62,7 @@ export function IdeaCard({ idea }) {
           borderWidth: 1,
           borderColor: theme.colors.border.subtle,
           overflow: "hidden",
-          minHeight: 160,
+          height: 170,
           ...theme.elevation.low,
         }}
       >
@@ -106,42 +106,43 @@ export function IdeaCard({ idea }) {
             {idea.title}
           </AppText>
 
-          {/* Summary */}
+          {/* Summary - only show if there's room */}
           {idea.summary && (
             <AppText
               variant="body"
               color="secondary"
-              numberOfLines={2}
+              numberOfLines={1}
               style={{ fontSize: 13, lineHeight: 18 }}
             >
               {idea.summary}
             </AppText>
           )}
+        </View>
 
-          <View style={{ flex: 1 }} />
-
-          {/* Footer */}
+        {/* Footer - positioned absolutely at bottom */}
+        <View
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            flexDirection: "row",
+            alignItems: "center",
+            paddingHorizontal: theme.spacing.lg,
+            paddingVertical: theme.spacing.md,
+            borderTopWidth: 1,
+            borderTopColor: theme.colors.border.subtle,
+            backgroundColor: theme.colors.surface.level1,
+          }}
+        >
           <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginTop: theme.spacing.md,
-              paddingTop: theme.spacing.md,
-              borderTopWidth: 1,
-              borderTopColor: theme.colors.border.subtle,
-            }}
+            style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.sm }}
           >
-            <View
-              style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.sm }}
-            >
-              {getSourceIcon()}
-              <Clock size={12} color={theme.colors.text.muted} strokeWidth={2} />
-              <AppText variant="caption" color="muted">
-                {formatDate(idea.created_at)}
-              </AppText>
-            </View>
-
+            {getSourceIcon()}
+            <Clock size={12} color={theme.colors.text.muted} strokeWidth={2} />
+            <AppText variant="caption" color="muted">
+              {formatDate(idea.created_at)}
+            </AppText>
           </View>
         </View>
       </View>
