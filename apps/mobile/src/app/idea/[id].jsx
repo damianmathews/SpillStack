@@ -27,7 +27,7 @@ import {
   Sparkles,
   Link2,
 } from "lucide-react-native";
-import { useTheme, categoryColors, gradients } from "@/contexts/ThemeContext";
+import { useTheme, categoryColors } from "@/contexts/ThemeContext";
 import { useQuery } from "@tanstack/react-query";
 import { sampleIdeas, categories } from "@/data/sampleData";
 import { getStoredIdeas, useUpdateIdea, useDeleteIdea } from "@/hooks/useCreateIdea";
@@ -186,12 +186,41 @@ export default function IdeaDetailScreen() {
     });
   };
 
-  const getCategoryGradient = () => {
-    return gradients.accent;
+  // Create a darkened gradient from the category color
+  const getCategoryGradient = (categoryName) => {
+    const baseColor = categoryColors[categoryName] || theme.colors.accent.primary;
+    // Return a gradient from very dark version to slightly lighter dark version
+    return [`${baseColor}`, `${baseColor}80`, `${baseColor}40`];
+  };
+
+  // Create darkened header colors based on category
+  const getDarkCategoryColors = (categoryName) => {
+    const baseColor = categoryColors[categoryName] || theme.colors.accent.primary;
+    // Dark versions for the gradient (multiply effect)
+    return [
+      darkenColor(baseColor, 0.7), // Very dark
+      darkenColor(baseColor, 0.5), // Medium dark
+    ];
+  };
+
+  // Helper to darken a hex color
+  const darkenColor = (hex, factor) => {
+    // Remove # if present
+    const color = hex.replace('#', '');
+    const r = Math.floor(parseInt(color.substring(0, 2), 16) * factor);
+    const g = Math.floor(parseInt(color.substring(2, 4), 16) * factor);
+    const b = Math.floor(parseInt(color.substring(4, 6), 16) * factor);
+    return `rgb(${r}, ${g}, ${b})`;
   };
 
   const getCategoryColor = (categoryName) => {
     return categoryColors[categoryName] || theme.colors.accent.primary;
+  };
+
+  // Navigate to category filter
+  const handleCategoryPress = (categoryName) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push(`/(tabs)/library/ideas?category=${encodeURIComponent(categoryName)}`);
   };
 
   // Get similar idea objects
@@ -233,9 +262,9 @@ export default function IdeaDetailScreen() {
     <View style={{ flex: 1, backgroundColor: theme.colors.background.default }}>
       <StatusBar style={isDark ? "light" : "dark"} />
 
-      {/* Header with gradient */}
+      {/* Header with category-colored gradient */}
       <LinearGradient
-        colors={getCategoryGradient()}
+        colors={getDarkCategoryColors(idea.category)}
         style={{
           paddingTop: insets.top + theme.spacing.lg,
           paddingBottom: theme.spacing.xl,
@@ -388,7 +417,11 @@ export default function IdeaDetailScreen() {
                 <ChevronDown size={16} color={theme.colors.text.muted} />
               </TouchableOpacity>
             ) : (
-              <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.sm }}>
+              <TouchableOpacity
+                onPress={() => handleCategoryPress(idea.category)}
+                style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.sm }}
+                activeOpacity={0.7}
+              >
                 <View
                   style={{
                     width: 12,
@@ -397,8 +430,8 @@ export default function IdeaDetailScreen() {
                     backgroundColor: getCategoryColor(idea.category),
                   }}
                 />
-                <AppText variant="subtitle" color="primary">{idea.category}</AppText>
-              </View>
+                <AppText variant="subtitle" style={{ color: getCategoryColor(idea.category) }}>{idea.category}</AppText>
+              </TouchableOpacity>
             )}
           </View>
 

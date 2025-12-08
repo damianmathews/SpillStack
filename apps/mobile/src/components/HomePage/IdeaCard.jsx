@@ -2,12 +2,19 @@ import React from "react";
 import { View, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
 import { Clock, Mic, Type, Link } from "lucide-react-native";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme, categoryColors } from "@/contexts/ThemeContext";
 import { AppText, AppChip } from "@/components/primitives";
 import * as Haptics from "expo-haptics";
 
 export function IdeaCard({ idea }) {
   const { theme } = useTheme();
+
+  // Get category color with fallback
+  const getCategoryColor = (categoryName) => {
+    return categoryColors[categoryName] || theme.colors.accent.primary;
+  };
+
+  const categoryColor = getCategoryColor(idea.category);
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -62,7 +69,7 @@ export function IdeaCard({ idea }) {
           borderWidth: 1,
           borderColor: theme.colors.border.subtle,
           overflow: "hidden",
-          height: 170,
+          height: 180,
           ...theme.elevation.low,
         }}
       >
@@ -72,7 +79,7 @@ export function IdeaCard({ idea }) {
           <View
             style={{
               alignSelf: "flex-start",
-              backgroundColor: theme.colors.accent.softBg,
+              backgroundColor: `${categoryColor}15`,
               paddingHorizontal: theme.spacing.sm,
               paddingVertical: theme.spacing.xs,
               borderRadius: theme.radius.sm,
@@ -82,7 +89,7 @@ export function IdeaCard({ idea }) {
             <AppText
               variant="caption"
               style={{
-                color: theme.colors.text.secondary,
+                color: categoryColor,
                 textTransform: "uppercase",
                 letterSpacing: 0.5,
                 fontWeight: "500",

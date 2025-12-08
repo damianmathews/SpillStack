@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
@@ -75,7 +76,8 @@ export function TaskTextModal({ visible, onClose, onTasksCreated }) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onTasksCreated(tasksToCreate);
     }
-    handleClose();
+    onClose();
+    setTimeout(resetState, 300);
   };
 
   const handleBack = () => {
@@ -84,14 +86,62 @@ export function TaskTextModal({ visible, onClose, onTasksCreated }) {
     setSelectedTasks(new Set());
   };
 
+  const resetState = () => {
+    setText("");
+    setStage("input");
+    setExtractedTasks([]);
+    setSelectedTasks(new Set());
+  };
+
   const handleClose = () => {
+    // If we have extracted tasks (preview stage), show confirmation
+    if (stage === "preview" && extractedTasks.length > 0) {
+      Alert.alert(
+        "Discard Tasks?",
+        "Are you sure you want to exit without saving? Your tasks will be lost.",
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+          {
+            text: "Discard",
+            style: "destructive",
+            onPress: () => {
+              onClose();
+              setTimeout(resetState, 300);
+            },
+          },
+        ]
+      );
+      return;
+    }
+
+    // If there's text entered in input stage, show confirmation
+    if (text.trim()) {
+      Alert.alert(
+        "Discard Tasks?",
+        "Are you sure you want to exit without saving? Your text will be lost.",
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+          {
+            text: "Discard",
+            style: "destructive",
+            onPress: () => {
+              onClose();
+              setTimeout(resetState, 300);
+            },
+          },
+        ]
+      );
+      return;
+    }
+
     onClose();
-    setTimeout(() => {
-      setText("");
-      setStage("input");
-      setExtractedTasks([]);
-      setSelectedTasks(new Set());
-    }, 300);
+    setTimeout(resetState, 300);
   };
 
   return (
@@ -114,7 +164,7 @@ export function TaskTextModal({ visible, onClose, onTasksCreated }) {
             {/* Header */}
             <View style={styles.header}>
               <TouchableOpacity
-                onPress={stage === "preview" ? handleBack : handleClose}
+                onPress={handleClose}
                 style={[
                   styles.closeButton,
                   {

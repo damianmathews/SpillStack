@@ -10,7 +10,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import {
   Circle,
   Check,
@@ -43,6 +43,8 @@ export default function LibraryTasksPage() {
   const insets = useSafeAreaInsets();
   const { theme, isDark } = useTheme();
   const queryClient = useQueryClient();
+  const params = useLocalSearchParams();
+  const cameFromHome = params.from === "home";
 
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -296,7 +298,7 @@ export default function LibraryTasksPage() {
         title="To Do"
         showBackButton
         onBackPress={() => router.back()}
-        backLabel="Back"
+        backLabel={cameFromHome ? "Home" : "Library"}
       />
 
       <FlatList

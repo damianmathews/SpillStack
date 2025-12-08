@@ -21,6 +21,11 @@ export function CategoryFilter({
     onCategorySelect(category);
   };
 
+  // Get category color with fallback
+  const getCategoryColor = (categoryName) => {
+    return categoryColors[categoryName] || theme.colors.accent.primary;
+  };
+
   return (
     <View style={{ paddingVertical: theme.spacing.md }}>
       <ScrollView
@@ -33,6 +38,7 @@ export function CategoryFilter({
       >
         {allCategories.map((category) => {
           const isSelected = selectedCategory === category.name;
+          const categoryColor = getCategoryColor(category.name);
 
           return (
             <TouchableOpacity
@@ -46,11 +52,11 @@ export function CategoryFilter({
                 alignItems: "center",
                 borderRadius: theme.radius.pill,
                 backgroundColor: isSelected
-                  ? theme.colors.accent.softBg
+                  ? `${categoryColor}15`
                   : theme.colors.surface.level1,
                 borderWidth: 1,
                 borderColor: isSelected
-                  ? theme.colors.accent.softBorder
+                  ? categoryColor
                   : theme.colors.border.subtle,
               }}
             >
@@ -58,7 +64,7 @@ export function CategoryFilter({
                 variant="subtitle"
                 style={{
                   color: isSelected
-                    ? theme.colors.text.primary
+                    ? categoryColor
                     : theme.colors.text.secondary,
                   letterSpacing: 0,
                   textTransform: "none",

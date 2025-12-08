@@ -73,7 +73,7 @@ export default function TabLayout() {
         }}
         listeners={{
           tabPress: (e) => {
-            // Always navigate to library index when tab is pressed
+            // Always navigate to the library index when tapping the tab
             e.preventDefault();
             router.replace("/(tabs)/library");
           },

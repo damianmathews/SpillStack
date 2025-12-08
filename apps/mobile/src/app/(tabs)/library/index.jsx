@@ -76,13 +76,13 @@ const ideaCategories = [
   },
 ];
 
-// Tasks category (standalone)
-const tasksCategory = {
-  id: "tasks",
-  title: "Tasks",
+// To Do category (standalone)
+const toDoCategory = {
+  id: "todo",
+  title: "To Do",
   subtitle: "Your action items and to-dos",
   icon: CheckCircle2,
-  color: "#22C55E",
+  color: "#06B6D4",
   route: "/(tabs)/library/tasks",
 };
 
@@ -212,7 +212,7 @@ export default function LibraryScreen() {
           <CategoryCard key={category.id} category={category} />
         ))}
 
-        {/* TASKS Section */}
+        {/* TO DO Section */}
         <AppText
           variant="subtitle"
           color="muted"
@@ -223,11 +223,11 @@ export default function LibraryScreen() {
             letterSpacing: 0.5,
           }}
         >
-          Tasks
+          To Do
         </AppText>
 
-        {/* Tasks Category Card */}
-        <CategoryCard category={tasksCategory} />
+        {/* To Do Category Card */}
+        <CategoryCard category={toDoCategory} />
       </ScrollView>
 
       {/* Floating Action Button */}

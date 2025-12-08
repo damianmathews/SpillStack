@@ -26,6 +26,7 @@ export default function LibraryIdeasPage() {
   const queryClient = useQueryClient();
   const { theme, isDark } = useTheme();
   const params = useLocalSearchParams();
+  const cameFromHome = params.from === "home";
 
   // Get initial category from URL params if passed
   const initialCategory = params.category || "All";
@@ -197,7 +198,7 @@ export default function LibraryIdeasPage() {
         title="All Ideas"
         showBackButton
         onBackPress={() => router.back()}
-        backLabel="Back"
+        backLabel={cameFromHome ? "Home" : "Library"}
       />
 
       <CategoryFilter

@@ -35,7 +35,7 @@ import Animated, {
   Layout,
 } from "react-native-reanimated";
 
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme, categoryColors } from "@/contexts/ThemeContext";
 import { useFirebaseAuth } from "@/contexts/AuthContext";
 import { useIdeas } from "@/hooks/useIdeas";
 import { getStoredIdeas } from "@/hooks/useCreateIdea";
@@ -364,6 +364,8 @@ export default function HomePage() {
   const RecentIdeaCard = ({ idea }) => {
     // Get preview text from summary or content
     const previewText = idea.summary || idea.content || "";
+    // Get category color
+    const categoryColor = categoryColors[idea.category] || theme.colors.accent.primary;
 
     return (
       <TouchableOpacity
@@ -384,7 +386,7 @@ export default function HomePage() {
         <View
           style={{
             alignSelf: "flex-start",
-            backgroundColor: theme.colors.accent.softBg,
+            backgroundColor: `${categoryColor}15`,
             paddingHorizontal: theme.spacing.sm,
             paddingVertical: theme.spacing.xs,
             borderRadius: theme.radius.sm,
@@ -394,7 +396,7 @@ export default function HomePage() {
           <AppText
             variant="caption"
             style={{
-              color: theme.colors.text.secondary,
+              color: categoryColor,
               textTransform: "uppercase",
               letterSpacing: 0.5,
               fontWeight: "500",
@@ -493,7 +495,7 @@ export default function HomePage() {
                 <SectionHeader
                   title="Ideas"
                   icon={Sparkles}
-                  onSeeAll={() => router.push("/(tabs)/library/ideas")}
+                  onSeeAll={() => router.push("/(tabs)/library/ideas?from=home")}
                   isFirst
                 />
                 <ScrollView
@@ -515,7 +517,7 @@ export default function HomePage() {
                 <SectionHeader
                   title="To Do"
                   icon={CheckCircle2}
-                  onSeeAll={() => router.push("/(tabs)/library/tasks")}
+                  onSeeAll={() => router.push("/(tabs)/library/tasks?from=home")}
                   isFirst={recentIdeas.length === 0}
                 />
                 {pendingTasks.map((task) => (
@@ -572,14 +574,14 @@ export default function HomePage() {
                       </View>
                       <View
                         style={{
-                          backgroundColor: theme.colors.accent.softBg,
+                          backgroundColor: `${categoryColors[idea.category] || theme.colors.accent.primary}15`,
                           paddingHorizontal: theme.spacing.sm,
                           paddingVertical: theme.spacing.xs,
                           borderRadius: theme.radius.sm,
                           marginLeft: theme.spacing.sm,
                         }}
                       >
-                        <AppText variant="caption" style={{ color: theme.colors.text.secondary }}>
+                        <AppText variant="caption" style={{ color: categoryColors[idea.category] || theme.colors.accent.primary }}>
                           {idea.category}
                         </AppText>
                       </View>

@@ -12,11 +12,13 @@ export default function LibraryLayout() {
           backgroundColor: theme.colors.background,
         },
         animation: "slide_from_right",
+        gestureEnabled: true,
+        gestureDirection: "horizontal",
       }}
     >
-      <Stack.Screen name="index" />
-      <Stack.Screen name="ideas" />
-      <Stack.Screen name="tasks" />
+      <Stack.Screen name="index" options={{ gestureEnabled: false }} />
+      <Stack.Screen name="ideas" options={{ gestureEnabled: true }} />
+      <Stack.Screen name="tasks" options={{ gestureEnabled: true }} />
     </Stack>
   );
 }
