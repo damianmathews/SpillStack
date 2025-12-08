@@ -1,8 +1,9 @@
 import React from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
-import { Clock, Eye, Mic, Type, Link } from "lucide-react-native";
+import { Clock, Mic, Type, Link } from "lucide-react-native";
 import { useTheme } from "@/contexts/ThemeContext";
+import { AppText, AppChip } from "@/components/primitives";
 import * as Haptics from "expo-haptics";
 
 export function IdeaCard({ idea }) {
@@ -32,112 +33,89 @@ export function IdeaCard({ idea }) {
     }
   };
 
-  const getCategoryColor = (category) => {
-    const categoryMap = {
-      Ideas: "#9C27B0",
-      Learning: "#3F51B5",
-      Projects: "#009688",
-      Research: "#FF5722",
-      Personal: "#E91E63",
-      "Business Ideas": "#673AB7",
-      "To Do": "#00BCD4",
-    };
-    return categoryMap[category] || theme.colors.primary;
-  };
-
   const getSourceIcon = () => {
+    const iconProps = { size: 12, color: theme.colors.text.muted, strokeWidth: 2 };
     switch (idea.source_type) {
       case "voice":
-        return <Mic size={10} color={theme.colors.textTertiary} />;
+        return <Mic {...iconProps} />;
       case "url":
-        return <Link size={10} color={theme.colors.textTertiary} />;
+        return <Link {...iconProps} />;
       default:
-        return <Type size={10} color={theme.colors.textTertiary} />;
+        return <Type {...iconProps} />;
     }
   };
-
-  const categoryColor = getCategoryColor(idea.category);
 
   return (
     <TouchableOpacity
       onPress={handlePress}
       style={{
         flex: 1,
-        marginHorizontal: 6,
-        marginBottom: 12,
+        marginHorizontal: theme.spacing.sm,
+        marginBottom: theme.spacing.md,
       }}
       activeOpacity={0.7}
     >
       <View
         style={{
-          backgroundColor: theme.colors.card,
-          borderRadius: theme.borderRadius.lg,
+          backgroundColor: theme.colors.surface.level1,
+          borderRadius: theme.radius.lg,
           borderWidth: 1,
-          borderColor: theme.colors.border,
+          borderColor: theme.colors.border.subtle,
           overflow: "hidden",
           minHeight: 160,
+          ...theme.elevation.low,
         }}
       >
-        {/* Category indicator */}
-        <View
-          style={{
-            height: 3,
-            backgroundColor: categoryColor,
-          }}
-        />
-
         {/* Content */}
-        <View style={{ padding: 14, flex: 1 }}>
-          {/* Category badge */}
+        <View style={{ padding: theme.spacing.lg, flex: 1 }}>
+          {/* Category chip */}
           <View
             style={{
               alignSelf: "flex-start",
-              backgroundColor: `${categoryColor}15`,
-              paddingHorizontal: 8,
-              paddingVertical: 3,
-              borderRadius: 6,
-              marginBottom: 10,
+              backgroundColor: theme.colors.accent.softBg,
+              paddingHorizontal: theme.spacing.sm,
+              paddingVertical: theme.spacing.xs,
+              borderRadius: theme.radius.sm,
+              marginBottom: theme.spacing.md,
             }}
           >
-            <Text
+            <AppText
+              variant="caption"
               style={{
-                color: categoryColor,
-                fontSize: 10,
-                fontWeight: "600",
+                color: theme.colors.text.secondary,
                 textTransform: "uppercase",
-                letterSpacing: 0.3,
+                letterSpacing: 0.5,
+                fontWeight: "500",
               }}
             >
               {idea.category}
-            </Text>
+            </AppText>
           </View>
 
           {/* Title */}
-          <Text
-            style={{
-              fontSize: 15,
-              fontWeight: "600",
-              color: theme.colors.text,
-              marginBottom: 6,
-              lineHeight: 20,
-            }}
+          <AppText
+            variant="title"
+            color="primary"
             numberOfLines={2}
+            style={{
+              marginBottom: theme.spacing.sm,
+              fontSize: 16,
+              lineHeight: 22,
+            }}
           >
             {idea.title}
-          </Text>
+          </AppText>
 
           {/* Summary */}
           {idea.summary && (
-            <Text
-              style={{
-                fontSize: 13,
-                color: theme.colors.textSecondary,
-                lineHeight: 18,
-              }}
+            <AppText
+              variant="body"
+              color="secondary"
               numberOfLines={2}
+              style={{ fontSize: 13, lineHeight: 18 }}
             >
               {idea.summary}
-            </Text>
+            </AppText>
           )}
 
           <View style={{ flex: 1 }} />
@@ -148,44 +126,22 @@ export function IdeaCard({ idea }) {
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "space-between",
-              marginTop: 12,
-              paddingTop: 10,
+              marginTop: theme.spacing.md,
+              paddingTop: theme.spacing.md,
               borderTopWidth: 1,
-              borderTopColor: theme.colors.border,
+              borderTopColor: theme.colors.border.subtle,
             }}
           >
             <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+              style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.sm }}
             >
               {getSourceIcon()}
-              <Clock size={10} color={theme.colors.textTertiary} />
-              <Text
-                style={{
-                  fontSize: 11,
-                  color: theme.colors.textTertiary,
-                  fontWeight: "500",
-                }}
-              >
+              <Clock size={12} color={theme.colors.text.muted} strokeWidth={2} />
+              <AppText variant="caption" color="muted">
                 {formatDate(idea.created_at)}
-              </Text>
+              </AppText>
             </View>
 
-            {idea.view_count > 0 && (
-              <View
-                style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
-              >
-                <Eye size={10} color={theme.colors.textTertiary} />
-                <Text
-                  style={{
-                    fontSize: 11,
-                    color: theme.colors.textTertiary,
-                    fontWeight: "500",
-                  }}
-                >
-                  {idea.view_count}
-                </Text>
-              </View>
-            )}
           </View>
         </View>
       </View>

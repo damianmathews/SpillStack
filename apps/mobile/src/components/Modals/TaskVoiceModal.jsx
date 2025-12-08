@@ -200,25 +200,33 @@ export function TaskVoiceModal({ visible, onClose, onTasksCreated }) {
           <View style={styles.header}>
             <TouchableOpacity
               onPress={handleClose}
-              style={[styles.closeButton, { backgroundColor: theme.colors.surface }]}
+              style={[
+                styles.closeButton,
+                {
+                  backgroundColor: theme.colors.surface,
+                  height: theme.componentHeight.iconButton,
+                  width: theme.componentHeight.iconButton,
+                  borderRadius: theme.componentHeight.iconButton / 2,
+                },
+              ]}
             >
-              <X size={20} color={theme.colors.text} />
+              <X size={20} color={theme.colors.text} strokeWidth={2} />
             </TouchableOpacity>
-            <Text style={[styles.title, { color: theme.colors.text }]}>
+            <Text style={[theme.typography.headline, { color: theme.colors.text }]}>
               {stage === "idle" && "Voice Task"}
               {stage === "recording" && "Recording..."}
               {stage === "processing" && "Extracting tasks..."}
               {stage === "preview" && "Tasks Found"}
             </Text>
-            <View style={{ width: 40 }} />
+            <View style={{ width: theme.componentHeight.iconButton }} />
           </View>
 
           {/* Content */}
-          <View style={styles.content}>
+          <View style={[styles.content, { paddingHorizontal: theme.spacing.xxl }]}>
             {/* Idle / Recording State */}
             {(stage === "idle" || stage === "recording") && (
               <View style={styles.recordingContainer}>
-                <View style={styles.waveContainer}>
+                <View style={[styles.waveContainer, { gap: theme.spacing.sm, marginBottom: theme.spacing.xxl }]}>
                   {waveAnims.map((anim, index) => (
                     <Animated.View
                       key={index}
@@ -227,13 +235,14 @@ export function TaskVoiceModal({ visible, onClose, onTasksCreated }) {
                         {
                           backgroundColor: theme.colors.secondary,
                           transform: [{ scaleY: anim }],
+                          borderRadius: theme.borderRadius.xs,
                         },
                       ]}
                     />
                   ))}
                 </View>
 
-                <Text style={[styles.timer, { color: theme.colors.text }]}>
+                <Text style={[styles.timer, { color: theme.colors.text, marginBottom: theme.spacing.xxxl + 8 }]}>
                   {formatTime(recorderState.currentTime || 0)}
                 </Text>
 
@@ -249,21 +258,22 @@ export function TaskVoiceModal({ visible, onClose, onTasksCreated }) {
                           ? theme.colors.error
                           : theme.colors.secondary,
                         transform: [{ scale: pulseAnim }],
+                        marginBottom: theme.spacing.xxl,
                       },
                     ]}
                   >
                     {stage === "idle" ? (
-                      <Mic size={32} color="#FFFFFF" />
+                      <Mic size={32} color="#FFFFFF" strokeWidth={2} />
                     ) : (
                       <Square size={28} color="#FFFFFF" fill="#FFFFFF" />
                     )}
                   </Animated.View>
                 </TouchableOpacity>
 
-                <Text style={[styles.hint, { color: theme.colors.textSecondary }]}>
+                <Text style={[theme.typography.subhead, { color: theme.colors.textSecondary }]}>
                   {stage === "idle" ? "Tap to start recording" : "Tap to stop"}
                 </Text>
-                <Text style={[styles.subHint, { color: theme.colors.textTertiary }]}>
+                <Text style={[theme.typography.footnote, { color: theme.colors.textTertiary, marginTop: theme.spacing.sm }]}>
                   AI will extract tasks from your voice
                 </Text>
               </View>
@@ -273,10 +283,10 @@ export function TaskVoiceModal({ visible, onClose, onTasksCreated }) {
             {stage === "processing" && (
               <View style={styles.processingContainer}>
                 <ActivityIndicator size="large" color={theme.colors.secondary} />
-                <Text style={[styles.processingText, { color: theme.colors.text }]}>
+                <Text style={[theme.typography.title3, { color: theme.colors.text, marginTop: theme.spacing.xxl }]}>
                   Extracting tasks...
                 </Text>
-                <Text style={[styles.processingSubtext, { color: theme.colors.textSecondary }]}>
+                <Text style={[theme.typography.subhead, { color: theme.colors.textSecondary, marginTop: theme.spacing.sm }]}>
                   AI is finding actionable items
                 </Text>
               </View>
@@ -285,18 +295,18 @@ export function TaskVoiceModal({ visible, onClose, onTasksCreated }) {
             {/* Preview State */}
             {stage === "preview" && extractedTasks.length > 0 && (
               <View style={styles.previewContainer}>
-                <View style={styles.taskCountBadge}>
-                  <ListTodo size={16} color={theme.colors.secondary} />
-                  <Text style={[styles.taskCountText, { color: theme.colors.secondary }]}>
+                <View style={[styles.taskCountBadge, { gap: theme.spacing.sm, marginBottom: theme.spacing.sm }]}>
+                  <ListTodo size={16} color={theme.colors.secondary} strokeWidth={2} />
+                  <Text style={[theme.typography.bodyMedium, { color: theme.colors.secondary }]}>
                     {extractedTasks.length} task{extractedTasks.length > 1 ? "s" : ""} found
                   </Text>
                 </View>
 
-                <Text style={[styles.selectHint, { color: theme.colors.textSecondary }]}>
+                <Text style={[theme.typography.footnote, { color: theme.colors.textSecondary, textAlign: "center", marginBottom: theme.spacing.lg }]}>
                   Tap to select/deselect tasks
                 </Text>
 
-                <ScrollView style={styles.taskList} showsVerticalScrollIndicator={false}>
+                <ScrollView style={[styles.taskList, { marginBottom: theme.spacing.lg }]} showsVerticalScrollIndicator={false}>
                   {extractedTasks.map((task, index) => (
                     <TouchableOpacity
                       key={index}
@@ -310,6 +320,10 @@ export function TaskVoiceModal({ visible, onClose, onTasksCreated }) {
                           borderColor: selectedTasks.has(index)
                             ? theme.colors.secondary
                             : theme.colors.border,
+                          borderRadius: theme.borderRadius.md,
+                          padding: theme.spacing.lg,
+                          marginBottom: theme.spacing.md,
+                          gap: theme.spacing.md,
                         },
                       ]}
                     >
@@ -323,14 +337,15 @@ export function TaskVoiceModal({ visible, onClose, onTasksCreated }) {
                             borderColor: selectedTasks.has(index)
                               ? theme.colors.secondary
                               : theme.colors.textTertiary,
+                            borderRadius: theme.borderRadius.xs + 2,
                           },
                         ]}
                       >
                         {selectedTasks.has(index) && (
-                          <Check size={14} color="#FFFFFF" />
+                          <Check size={14} color="#FFFFFF" strokeWidth={2} />
                         )}
                       </View>
-                      <Text style={[styles.taskText, { color: theme.colors.text }]}>
+                      <Text style={[theme.typography.body, { color: theme.colors.text, flex: 1 }]}>
                         {task}
                       </Text>
                     </TouchableOpacity>
@@ -338,17 +353,23 @@ export function TaskVoiceModal({ visible, onClose, onTasksCreated }) {
                 </ScrollView>
 
                 {/* Action Buttons */}
-                <View style={styles.actionButtons}>
+                <View style={[styles.actionButtons, { gap: theme.spacing.md, paddingBottom: theme.spacing.xl }]}>
                   <TouchableOpacity
                     style={[
                       styles.actionButton,
                       styles.secondaryButton,
-                      { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+                      {
+                        backgroundColor: theme.colors.surface,
+                        borderColor: theme.colors.border,
+                        height: theme.componentHeight.button,
+                        borderRadius: theme.borderRadius.md,
+                        gap: theme.spacing.sm,
+                      },
                     ]}
                     onPress={handleRetry}
                   >
-                    <RefreshCw size={20} color={theme.colors.text} />
-                    <Text style={[styles.actionButtonText, { color: theme.colors.text }]}>
+                    <RefreshCw size={20} color={theme.colors.text} strokeWidth={2} />
+                    <Text style={[theme.typography.bodyMedium, { color: theme.colors.text }]}>
                       Retry
                     </Text>
                   </TouchableOpacity>
@@ -361,15 +382,18 @@ export function TaskVoiceModal({ visible, onClose, onTasksCreated }) {
                         backgroundColor: selectedTasks.size > 0
                           ? theme.colors.secondary
                           : theme.colors.surface,
+                        height: theme.componentHeight.button,
+                        borderRadius: theme.borderRadius.md,
+                        gap: theme.spacing.sm,
                       },
                     ]}
                     onPress={handleSave}
                     disabled={selectedTasks.size === 0}
                   >
-                    <Check size={20} color={selectedTasks.size > 0 ? "#FFFFFF" : theme.colors.textTertiary} />
+                    <Check size={20} color={selectedTasks.size > 0 ? "#FFFFFF" : theme.colors.textTertiary} strokeWidth={2} />
                     <Text
                       style={[
-                        styles.actionButtonText,
+                        theme.typography.bodyMedium,
                         { color: selectedTasks.size > 0 ? "#FFFFFF" : theme.colors.textTertiary },
                       ]}
                     >
@@ -386,6 +410,7 @@ export function TaskVoiceModal({ visible, onClose, onTasksCreated }) {
   );
 }
 
+// Static styles - theme values are applied inline
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -394,25 +419,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 20, // theme.spacing.xl
+    paddingVertical: 16, // theme.spacing.lg
   },
   closeButton: {
-    width: 40,
+    width: 40, // theme.componentHeight.iconButton
     height: 40,
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
   },
-  title: {
-    fontSize: 17,
-    fontWeight: "600",
-  },
   content: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 24,
+    paddingHorizontal: 24, // theme.spacing.xxl
   },
   recordingContainer: {
     alignItems: "center",
@@ -421,18 +442,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     height: 80,
-    marginBottom: 24,
-    gap: 8,
+    marginBottom: 24, // theme.spacing.xxl
+    gap: 8, // theme.spacing.sm
   },
   waveBar: {
     width: 6,
     height: 60,
-    borderRadius: 3,
+    borderRadius: 3, // theme.borderRadius.xs
   },
   timer: {
     fontSize: 48,
     fontWeight: "300",
-    marginBottom: 40,
+    marginBottom: 40, // theme.spacing.xxxl + 8
     fontVariant: ["tabular-nums"],
   },
   recordButton: {
@@ -441,26 +462,10 @@ const styles = StyleSheet.create({
     borderRadius: 44,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 24,
-  },
-  hint: {
-    fontSize: 15,
-  },
-  subHint: {
-    fontSize: 13,
-    marginTop: 8,
+    marginBottom: 24, // theme.spacing.xxl
   },
   processingContainer: {
     alignItems: "center",
-  },
-  processingText: {
-    fontSize: 20,
-    fontWeight: "600",
-    marginTop: 24,
-  },
-  processingSubtext: {
-    fontSize: 15,
-    marginTop: 8,
   },
   previewContainer: {
     width: "100%",
@@ -470,64 +475,46 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    marginBottom: 8,
-  },
-  taskCountText: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  selectHint: {
-    fontSize: 13,
-    textAlign: "center",
-    marginBottom: 16,
+    gap: 8, // theme.spacing.sm
+    marginBottom: 8, // theme.spacing.sm
   },
   taskList: {
     flex: 1,
-    marginBottom: 16,
+    marginBottom: 16, // theme.spacing.lg
   },
   taskItem: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 16,
-    borderRadius: 12,
+    padding: 16, // theme.spacing.lg
+    borderRadius: 12, // theme.borderRadius.md
     borderWidth: 1,
-    marginBottom: 10,
-    gap: 12,
+    marginBottom: 10, // theme.spacing.md
+    gap: 12, // theme.spacing.md
   },
   checkbox: {
     width: 24,
     height: 24,
-    borderRadius: 6,
+    borderRadius: 6, // theme.borderRadius.xs + 2
     borderWidth: 2,
     alignItems: "center",
     justifyContent: "center",
   },
-  taskText: {
-    flex: 1,
-    fontSize: 16,
-    lineHeight: 22,
-  },
   actionButtons: {
     flexDirection: "row",
-    gap: 12,
-    paddingBottom: 20,
+    gap: 12, // theme.spacing.md
+    paddingBottom: 20, // theme.spacing.xl
   },
   actionButton: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 16,
-    borderRadius: 12,
-    gap: 8,
+    height: 48, // theme.componentHeight.button
+    borderRadius: 12, // theme.borderRadius.md
+    gap: 8, // theme.spacing.sm
   },
   secondaryButton: {
     borderWidth: 1,
   },
   primaryButton: {},
-  actionButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
 });

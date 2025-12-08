@@ -102,31 +102,46 @@ export function TextModal({ visible, onClose }) {
             <View style={styles.header}>
               <TouchableOpacity
                 onPress={handleClose}
-                style={[styles.closeButton, { backgroundColor: theme.colors.surface }]}
+                style={[
+                  styles.iconButton,
+                  {
+                    backgroundColor: theme.colors.surface,
+                    height: theme.componentHeight.iconButton,
+                    width: theme.componentHeight.iconButton,
+                    borderRadius: theme.componentHeight.iconButton / 2,
+                  },
+                ]}
               >
-                <X size={20} color={theme.colors.text} />
+                <X size={20} color={theme.colors.text} strokeWidth={2} />
               </TouchableOpacity>
-              <Text style={[styles.title, { color: theme.colors.text }]}>
+              <Text style={[theme.typography.headline, { color: theme.colors.text }]}>
                 {isProcessing ? "Processing..." : "New Idea"}
               </Text>
               <TouchableOpacity
                 onPress={handleSubmit}
                 disabled={!text.trim() || isSubmitting}
                 style={[
-                  styles.saveButton,
+                  styles.iconButton,
                   {
                     backgroundColor: text.trim() && !isSubmitting
                       ? theme.colors.primary
                       : theme.colors.surface,
+                    height: theme.componentHeight.iconButton,
+                    width: theme.componentHeight.iconButton,
+                    borderRadius: theme.componentHeight.iconButton / 2,
                   },
                 ]}
               >
                 {isSubmitting ? (
-                  <ActivityIndicator size="small" color={text.trim() ? "#FFFFFF" : theme.colors.textTertiary} />
+                  <ActivityIndicator
+                    size="small"
+                    color={text.trim() ? "#FFFFFF" : theme.colors.textTertiary}
+                  />
                 ) : (
                   <Check
                     size={20}
                     color={text.trim() ? "#FFFFFF" : theme.colors.textTertiary}
+                    strokeWidth={2}
                   />
                 )}
               </TouchableOpacity>
@@ -135,7 +150,10 @@ export function TextModal({ visible, onClose }) {
             {/* Content */}
             <ScrollView
               style={styles.scrollView}
-              contentContainerStyle={styles.scrollContent}
+              contentContainerStyle={[
+                styles.scrollContent,
+                { padding: theme.spacing.xl },
+              ]}
               keyboardDismissMode="interactive"
             >
               <View
@@ -144,6 +162,8 @@ export function TextModal({ visible, onClose }) {
                   {
                     backgroundColor: theme.colors.card,
                     borderColor: theme.colors.border,
+                    borderRadius: theme.borderRadius.lg,
+                    padding: theme.spacing.lg,
                   },
                 ]}
               >
@@ -152,7 +172,11 @@ export function TextModal({ visible, onClose }) {
                   onChangeText={handleTextChange}
                   placeholder="What's on your mind?"
                   placeholderTextColor={theme.colors.textTertiary}
-                  style={[styles.textInput, { color: theme.colors.text }]}
+                  style={[
+                    theme.typography.body,
+                    styles.textInput,
+                    { color: theme.colors.text },
+                  ]}
                   multiline
                   autoFocus
                   textAlignVertical="top"
@@ -161,14 +185,29 @@ export function TextModal({ visible, onClose }) {
               </View>
 
               {/* Footer Info */}
-              <View style={styles.footer}>
+              <View
+                style={[
+                  styles.footer,
+                  {
+                    marginTop: theme.spacing.lg,
+                    paddingHorizontal: theme.spacing.xs,
+                  },
+                ]}
+              >
                 <View style={styles.aiHint}>
-                  <Sparkles size={14} color={theme.colors.primary} />
-                  <Text style={[styles.aiHintText, { color: theme.colors.textSecondary }]}>
+                  <Sparkles size={14} color={theme.colors.primary} strokeWidth={2} />
+                  <Text
+                    style={[
+                      theme.typography.footnote,
+                      { color: theme.colors.textSecondary, marginLeft: theme.spacing.sm },
+                    ]}
+                  >
                     AI will create title, summary & tags
                   </Text>
                 </View>
-                <Text style={[styles.charCount, { color: theme.colors.textTertiary }]}>
+                <Text
+                  style={[theme.typography.footnote, { color: theme.colors.textTertiary }]}
+                >
                   {charCount} characters
                 </Text>
               </View>
@@ -191,21 +230,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
   },
-  closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  title: {
-    fontSize: 17,
-    fontWeight: "600",
-  },
-  saveButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  iconButton: {
     alignItems: "center",
     justifyContent: "center",
   },
@@ -213,36 +238,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
     paddingBottom: 40,
   },
   inputContainer: {
-    borderRadius: 16,
     borderWidth: 1,
-    padding: 16,
     minHeight: 200,
   },
   textInput: {
-    fontSize: 17,
-    lineHeight: 26,
     minHeight: 168,
   },
   footer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginTop: 16,
-    paddingHorizontal: 4,
   },
   aiHint: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-  },
-  aiHintText: {
-    fontSize: 13,
-  },
-  charCount: {
-    fontSize: 13,
   },
 });

@@ -2,18 +2,19 @@ import React, { useState, useRef } from "react";
 import {
   View,
   TouchableOpacity,
-  Text,
   Animated,
   Pressable,
   StyleSheet,
 } from "react-native";
 import { Plus, X, Mic, Type, Link } from "lucide-react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { useTheme } from "@/contexts/ThemeContext";
+import { AppText } from "@/components/primitives";
 import * as Haptics from "expo-haptics";
 
 export function FloatingActionButton({ onVoice, onText, onLink }) {
-  const { theme, isDark } = useTheme();
+  const { theme, isDark, gradients } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
 
   const animation = useRef(new Animated.Value(0)).current;
@@ -58,20 +59,20 @@ export function FloatingActionButton({ onVoice, onText, onLink }) {
     outputRange: [0, 1],
   });
 
-  // Animation values for each option
+  // Animation values for each option - 60px spacing, starting higher from FAB
   const voiceTranslate = animation.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -180],
+    outputRange: [0, -210],
   });
 
   const textTranslate = animation.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -120],
+    outputRange: [0, -145],
   });
 
   const linkTranslate = animation.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -60],
+    outputRange: [0, -80],
   });
 
   const optionScale = animation.interpolate({
@@ -86,7 +87,7 @@ export function FloatingActionButton({ onVoice, onText, onLink }) {
       icon: Mic,
       translate: voiceTranslate,
       onPress: onVoice,
-      color: theme.colors.primary,
+      color: theme.colors.accent.primary,
     },
     {
       id: "text",
@@ -94,7 +95,7 @@ export function FloatingActionButton({ onVoice, onText, onLink }) {
       icon: Type,
       translate: textTranslate,
       onPress: onText,
-      color: theme.colors.secondary,
+      color: theme.colors.accent.primary,
     },
     {
       id: "link",
@@ -102,7 +103,7 @@ export function FloatingActionButton({ onVoice, onText, onLink }) {
       icon: Link,
       translate: linkTranslate,
       onPress: onLink,
-      color: theme.colors.info,
+      color: theme.colors.accent.primary,
     },
   ];
 
@@ -120,7 +121,7 @@ export function FloatingActionButton({ onVoice, onText, onLink }) {
             <BlurView
               intensity={30}
               tint={isDark ? "dark" : "light"}
-              style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)" }}
+              style={{ flex: 1, backgroundColor: "rgba(5, 8, 17, 0.5)" }}
             />
           </Pressable>
         </Animated.View>
@@ -147,28 +148,32 @@ export function FloatingActionButton({ onVoice, onText, onLink }) {
               style={[
                 styles.optionButton,
                 {
-                  backgroundColor: theme.colors.card,
-                  borderColor: theme.colors.border,
+                  backgroundColor: theme.colors.surface.level2,
+                  borderColor: theme.colors.border.subtle,
+                  height: theme.componentHeight.iconButton,
+                  width: theme.componentHeight.iconButton,
+                  borderRadius: theme.componentHeight.iconButton / 2,
                 },
               ]}
               onPress={() => handleOptionPress(option.onPress)}
               activeOpacity={0.8}
             >
-              <option.icon size={20} color={option.color} />
+              <option.icon size={20} color={option.color} strokeWidth={2} />
             </TouchableOpacity>
             <Animated.View
               style={[
                 styles.optionLabel,
                 {
-                  backgroundColor: theme.colors.card,
-                  borderColor: theme.colors.border,
+                  backgroundColor: theme.colors.surface.level2,
+                  borderColor: theme.colors.border.subtle,
+                  borderRadius: theme.radius.sm,
                   opacity: animation,
                 },
               ]}
             >
-              <Text style={[styles.optionLabelText, { color: theme.colors.text }]}>
+              <AppText variant="subtitle" color="primary">
                 {option.label}
-              </Text>
+              </AppText>
             </Animated.View>
           </Animated.View>
         ))}
@@ -178,15 +183,20 @@ export function FloatingActionButton({ onVoice, onText, onLink }) {
           style={[
             styles.fab,
             {
-              backgroundColor: theme.colors.primary,
-              ...theme.shadows.glow,
+              width: theme.componentHeight.fab,
+              height: theme.componentHeight.fab,
+              borderRadius: theme.componentHeight.fab / 2,
+              backgroundColor: "#FFFFFF",
+              alignItems: "center",
+              justifyContent: "center",
+              ...theme.elevation.mid,
             },
           ]}
           onPress={toggleMenu}
           activeOpacity={0.9}
         >
           <Animated.View style={{ transform: [{ rotate: rotation }] }}>
-            <Plus size={28} color="#FFFFFF" strokeWidth={2.5} />
+            <Plus size={26} color={theme.colors.accent.primary} strokeWidth={2.5} />
           </Animated.View>
         </TouchableOpacity>
       </View>
@@ -203,9 +213,6 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   fab: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -216,23 +223,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   optionButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
   },
   optionLabel: {
     position: "absolute",
-    right: 60,
+    right: 56,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 8,
     borderWidth: 1,
-  },
-  optionLabelText: {
-    fontSize: 14,
-    fontWeight: "600",
   },
 });

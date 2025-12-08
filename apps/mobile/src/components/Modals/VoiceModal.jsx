@@ -7,12 +7,11 @@ import {
   Animated,
   StyleSheet,
   ActivityIndicator,
-  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { X, Mic, Square, Check, RefreshCw, AlertTriangle, GitMerge } from "lucide-react-native";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme, categoryColors } from "@/contexts/ThemeContext";
 import { useVoiceRecording } from "@/hooks/useVoiceRecording";
 import { useCreateIdea, getStoredIdeas } from "@/hooks/useCreateIdea";
 import { checkDuplicate } from "@/services/ai";
@@ -201,6 +200,10 @@ export function VoiceModal({ visible, onClose }) {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
+  const categoryColor = ideaData?.category
+    ? categoryColors[ideaData.category] || theme.colors.primary
+    : theme.colors.primary;
+
   return (
     <Modal
       visible={visible}
@@ -218,17 +221,26 @@ export function VoiceModal({ visible, onClose }) {
           <View style={styles.header}>
             <TouchableOpacity
               onPress={handleClose}
-              style={[styles.closeButton, { backgroundColor: theme.colors.surface }]}
+              style={[
+                styles.iconButton,
+                {
+                  backgroundColor: theme.colors.surface,
+                  height: theme.componentHeight.iconButton,
+                  width: theme.componentHeight.iconButton,
+                  borderRadius: theme.componentHeight.iconButton / 2,
+                },
+              ]}
             >
-              <X size={20} color={theme.colors.text} />
+              <X size={20} color={theme.colors.text} strokeWidth={2} />
             </TouchableOpacity>
-            <Text style={[styles.title, { color: theme.colors.text }]}>
+            <Text style={[theme.typography.headline, { color: theme.colors.text }]}>
               {stage === "idle" && "Voice Note"}
               {stage === "recording" && "Recording..."}
               {stage === "processing" && "Processing..."}
               {stage === "preview" && "Preview"}
+              {stage === "duplicate" && "Similar Found"}
             </Text>
-            <View style={{ width: 40 }} />
+            <View style={{ width: theme.componentHeight.iconButton }} />
           </View>
 
           {/* Content */}
@@ -245,6 +257,7 @@ export function VoiceModal({ visible, onClose }) {
                         styles.waveBar,
                         {
                           backgroundColor: theme.colors.primary,
+                          borderRadius: theme.borderRadius.xs,
                           transform: [{ scaleY: anim }],
                         },
                       ]}
@@ -253,9 +266,33 @@ export function VoiceModal({ visible, onClose }) {
                 </View>
 
                 {/* Timer */}
-                <Text style={[styles.timer, { color: theme.colors.text }]}>
+                <Text
+                  style={[
+                    styles.timer,
+                    {
+                      color: recorderState.showCountdown ? theme.colors.error : theme.colors.text,
+                      fontVariant: ["tabular-nums"]
+                    },
+                  ]}
+                >
                   {formatTime(recorderState.currentTime || 0)}
                 </Text>
+
+                {/* Countdown Warning */}
+                {recorderState.showCountdown && (
+                  <Text
+                    style={[
+                      theme.typography.callout,
+                      {
+                        color: theme.colors.error,
+                        marginBottom: theme.spacing.md,
+                        fontWeight: "600",
+                      },
+                    ]}
+                  >
+                    {recorderState.timeRemaining}s remaining
+                  </Text>
+                )}
 
                 {/* Record Button */}
                 <TouchableOpacity
@@ -274,14 +311,19 @@ export function VoiceModal({ visible, onClose }) {
                     ]}
                   >
                     {stage === "idle" ? (
-                      <Mic size={32} color="#FFFFFF" />
+                      <Mic size={32} color="#FFFFFF" strokeWidth={2} />
                     ) : (
                       <Square size={28} color="#FFFFFF" fill="#FFFFFF" />
                     )}
                   </Animated.View>
                 </TouchableOpacity>
 
-                <Text style={[styles.hint, { color: theme.colors.textSecondary }]}>
+                <Text
+                  style={[
+                    theme.typography.callout,
+                    { color: theme.colors.textSecondary, marginTop: theme.spacing.lg },
+                  ]}
+                >
                   {stage === "idle" ? "Tap to start recording" : "Tap to stop"}
                 </Text>
               </View>
@@ -291,10 +333,20 @@ export function VoiceModal({ visible, onClose }) {
             {stage === "processing" && (
               <View style={styles.processingContainer}>
                 <ActivityIndicator size="large" color={theme.colors.primary} />
-                <Text style={[styles.processingText, { color: theme.colors.text }]}>
+                <Text
+                  style={[
+                    theme.typography.title3,
+                    { color: theme.colors.text, marginTop: theme.spacing.xxl },
+                  ]}
+                >
                   Transcribing your voice...
                 </Text>
-                <Text style={[styles.processingSubtext, { color: theme.colors.textSecondary }]}>
+                <Text
+                  style={[
+                    theme.typography.callout,
+                    { color: theme.colors.textSecondary, marginTop: theme.spacing.sm },
+                  ]}
+                >
                   AI is processing your recording
                 </Text>
               </View>
@@ -304,13 +356,34 @@ export function VoiceModal({ visible, onClose }) {
             {stage === "preview" && ideaData && (
               <View style={styles.previewContainer}>
                 {/* Title */}
-                <Text style={[styles.previewTitle, { color: theme.colors.text }]}>
+                <Text
+                  style={[
+                    theme.typography.title2,
+                    { color: theme.colors.text, textAlign: "center", marginBottom: theme.spacing.md },
+                  ]}
+                >
                   {ideaData.title}
                 </Text>
 
                 {/* Category Badge */}
-                <View style={[styles.categoryBadge, { backgroundColor: `${theme.colors.primary}20` }]}>
-                  <Text style={[styles.categoryText, { color: theme.colors.primary }]}>
+                <View
+                  style={[
+                    styles.categoryBadge,
+                    {
+                      backgroundColor: `${categoryColor}20`,
+                      borderRadius: theme.borderRadius.full,
+                      paddingHorizontal: theme.spacing.lg,
+                      paddingVertical: theme.spacing.sm,
+                      marginBottom: theme.spacing.xl,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      theme.typography.subheadMedium,
+                      { color: categoryColor },
+                    ]}
+                  >
                     {ideaData.category}
                   </Text>
                 </View>
@@ -322,13 +395,21 @@ export function VoiceModal({ visible, onClose }) {
                     {
                       backgroundColor: theme.colors.card,
                       borderColor: theme.colors.border,
+                      borderRadius: theme.borderRadius.lg,
+                      padding: theme.spacing.xl,
+                      marginBottom: theme.spacing.lg,
                     },
                   ]}
                 >
-                  <Text style={[styles.previewLabel, { color: theme.colors.textSecondary }]}>
-                    Summary
+                  <Text
+                    style={[
+                      theme.typography.label,
+                      { color: theme.colors.textSecondary, marginBottom: theme.spacing.md },
+                    ]}
+                  >
+                    SUMMARY
                   </Text>
-                  <Text style={[styles.previewText, { color: theme.colors.text }]}>
+                  <Text style={[theme.typography.body, { color: theme.colors.text }]}>
                     {ideaData.summary}
                   </Text>
                 </View>
@@ -337,8 +418,24 @@ export function VoiceModal({ visible, onClose }) {
                 {ideaData.tags && ideaData.tags.length > 0 && (
                   <View style={styles.tagsContainer}>
                     {ideaData.tags.map((tag, index) => (
-                      <View key={index} style={[styles.tag, { backgroundColor: theme.colors.surface }]}>
-                        <Text style={[styles.tagText, { color: theme.colors.textSecondary }]}>
+                      <View
+                        key={index}
+                        style={[
+                          styles.tag,
+                          {
+                            backgroundColor: theme.colors.surface,
+                            borderRadius: theme.borderRadius.full,
+                            paddingHorizontal: theme.spacing.md,
+                            paddingVertical: theme.spacing.sm,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            theme.typography.footnote,
+                            { color: theme.colors.textSecondary },
+                          ]}
+                        >
                           #{tag}
                         </Text>
                       </View>
@@ -347,17 +444,27 @@ export function VoiceModal({ visible, onClose }) {
                 )}
 
                 {/* Action Buttons */}
-                <View style={styles.actionButtons}>
+                <View style={[styles.actionButtons, { gap: theme.spacing.md }]}>
                   <TouchableOpacity
                     style={[
                       styles.actionButton,
-                      styles.secondaryButton,
-                      { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+                      {
+                        backgroundColor: theme.colors.surface,
+                        borderColor: theme.colors.border,
+                        borderWidth: 1,
+                        borderRadius: theme.borderRadius.md,
+                        height: theme.componentHeight.button,
+                      },
                     ]}
                     onPress={handleRetry}
                   >
-                    <RefreshCw size={20} color={theme.colors.text} />
-                    <Text style={[styles.actionButtonText, { color: theme.colors.text }]}>
+                    <RefreshCw size={18} color={theme.colors.text} strokeWidth={2} />
+                    <Text
+                      style={[
+                        theme.typography.bodyMedium,
+                        { color: theme.colors.text, marginLeft: theme.spacing.sm },
+                      ]}
+                    >
                       Retry
                     </Text>
                   </TouchableOpacity>
@@ -365,8 +472,11 @@ export function VoiceModal({ visible, onClose }) {
                   <TouchableOpacity
                     style={[
                       styles.actionButton,
-                      styles.primaryButton,
-                      { backgroundColor: theme.colors.primary },
+                      {
+                        backgroundColor: theme.colors.primary,
+                        borderRadius: theme.borderRadius.md,
+                        height: theme.componentHeight.button,
+                      },
                     ]}
                     onPress={handleSave}
                     disabled={createIdeaMutation.isPending}
@@ -375,8 +485,13 @@ export function VoiceModal({ visible, onClose }) {
                       <ActivityIndicator size="small" color="#FFFFFF" />
                     ) : (
                       <>
-                        <Check size={20} color="#FFFFFF" />
-                        <Text style={[styles.actionButtonText, { color: "#FFFFFF" }]}>
+                        <Check size={18} color="#FFFFFF" strokeWidth={2} />
+                        <Text
+                          style={[
+                            theme.typography.bodyMedium,
+                            { color: "#FFFFFF", marginLeft: theme.spacing.sm },
+                          ]}
+                        >
                           Save Idea
                         </Text>
                       </>
@@ -390,14 +505,35 @@ export function VoiceModal({ visible, onClose }) {
             {stage === "duplicate" && duplicateIdea && (
               <View style={styles.previewContainer}>
                 {/* Warning Icon */}
-                <View style={[styles.duplicateIcon, { backgroundColor: `${theme.colors.warning}20` }]}>
-                  <AlertTriangle size={32} color={theme.colors.warning} />
+                <View
+                  style={[
+                    styles.duplicateIcon,
+                    {
+                      backgroundColor: `${theme.colors.warning}20`,
+                      width: 64,
+                      height: 64,
+                      borderRadius: 32,
+                      marginBottom: theme.spacing.lg,
+                    },
+                  ]}
+                >
+                  <AlertTriangle size={32} color={theme.colors.warning} strokeWidth={2} />
                 </View>
 
-                <Text style={[styles.duplicateTitle, { color: theme.colors.text }]}>
+                <Text
+                  style={[
+                    theme.typography.title2,
+                    { color: theme.colors.text, textAlign: "center", marginBottom: theme.spacing.sm },
+                  ]}
+                >
                   Similar Idea Found
                 </Text>
-                <Text style={[styles.duplicateSubtext, { color: theme.colors.textSecondary }]}>
+                <Text
+                  style={[
+                    theme.typography.callout,
+                    { color: theme.colors.textSecondary, textAlign: "center", marginBottom: theme.spacing.xxl },
+                  ]}
+                >
                   This looks like something you've already captured
                 </Text>
 
@@ -409,32 +545,58 @@ export function VoiceModal({ visible, onClose }) {
                       backgroundColor: theme.colors.card,
                       borderColor: theme.colors.warning,
                       borderWidth: 2,
+                      borderRadius: theme.borderRadius.lg,
+                      padding: theme.spacing.xl,
+                      marginBottom: theme.spacing.lg,
                     },
                   ]}
                 >
-                  <Text style={[styles.previewLabel, { color: theme.colors.warning }]}>
-                    Existing Idea
+                  <Text
+                    style={[
+                      theme.typography.label,
+                      { color: theme.colors.warning, marginBottom: theme.spacing.md },
+                    ]}
+                  >
+                    EXISTING IDEA
                   </Text>
-                  <Text style={[styles.existingTitle, { color: theme.colors.text }]}>
+                  <Text
+                    style={[
+                      theme.typography.headline,
+                      { color: theme.colors.text, marginBottom: theme.spacing.sm },
+                    ]}
+                  >
                     {duplicateIdea.title}
                   </Text>
-                  <Text style={[styles.existingContent, { color: theme.colors.textSecondary }]} numberOfLines={3}>
+                  <Text
+                    style={[theme.typography.callout, { color: theme.colors.textSecondary }]}
+                    numberOfLines={3}
+                  >
                     {duplicateIdea.summary || duplicateIdea.content}
                   </Text>
                 </View>
 
                 {/* Action Buttons */}
-                <View style={styles.actionButtons}>
+                <View style={[styles.actionButtons, { gap: theme.spacing.md }]}>
                   <TouchableOpacity
                     style={[
                       styles.actionButton,
-                      styles.secondaryButton,
-                      { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+                      {
+                        backgroundColor: theme.colors.surface,
+                        borderColor: theme.colors.border,
+                        borderWidth: 1,
+                        borderRadius: theme.borderRadius.md,
+                        height: theme.componentHeight.button,
+                      },
                     ]}
                     onPress={handleSaveAnyway}
                   >
-                    <GitMerge size={20} color={theme.colors.text} />
-                    <Text style={[styles.actionButtonText, { color: theme.colors.text }]}>
+                    <GitMerge size={18} color={theme.colors.text} strokeWidth={2} />
+                    <Text
+                      style={[
+                        theme.typography.bodyMedium,
+                        { color: theme.colors.text, marginLeft: theme.spacing.sm },
+                      ]}
+                    >
                       Save Anyway
                     </Text>
                   </TouchableOpacity>
@@ -442,13 +604,21 @@ export function VoiceModal({ visible, onClose }) {
                   <TouchableOpacity
                     style={[
                       styles.actionButton,
-                      styles.primaryButton,
-                      { backgroundColor: theme.colors.primary },
+                      {
+                        backgroundColor: theme.colors.primary,
+                        borderRadius: theme.borderRadius.md,
+                        height: theme.componentHeight.button,
+                      },
                     ]}
                     onPress={handleViewExisting}
                   >
-                    <Check size={20} color="#FFFFFF" />
-                    <Text style={[styles.actionButtonText, { color: "#FFFFFF" }]}>
+                    <Check size={18} color="#FFFFFF" strokeWidth={2} />
+                    <Text
+                      style={[
+                        theme.typography.bodyMedium,
+                        { color: "#FFFFFF", marginLeft: theme.spacing.sm },
+                      ]}
+                    >
                       View Existing
                     </Text>
                   </TouchableOpacity>
@@ -473,16 +643,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
   },
-  closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  iconButton: {
     alignItems: "center",
     justifyContent: "center",
-  },
-  title: {
-    fontSize: 17,
-    fontWeight: "600",
   },
   content: {
     flex: 1,
@@ -503,13 +666,11 @@ const styles = StyleSheet.create({
   waveBar: {
     width: 6,
     height: 60,
-    borderRadius: 3,
   },
   timer: {
     fontSize: 48,
     fontWeight: "300",
     marginBottom: 40,
-    fontVariant: ["tabular-nums"],
   },
   recordButton: {
     width: 88,
@@ -517,59 +678,20 @@ const styles = StyleSheet.create({
     borderRadius: 44,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 24,
-  },
-  hint: {
-    fontSize: 15,
   },
   processingContainer: {
     alignItems: "center",
   },
-  processingText: {
-    fontSize: 20,
-    fontWeight: "600",
-    marginTop: 24,
-  },
-  processingSubtext: {
-    fontSize: 15,
-    marginTop: 8,
-  },
   previewContainer: {
     width: "100%",
-  },
-  previewTitle: {
-    fontSize: 24,
-    fontWeight: "700",
-    marginBottom: 12,
-    textAlign: "center",
+    alignItems: "center",
   },
   categoryBadge: {
     alignSelf: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginBottom: 20,
-  },
-  categoryText: {
-    fontSize: 13,
-    fontWeight: "600",
   },
   previewCard: {
-    padding: 20,
-    borderRadius: 16,
+    width: "100%",
     borderWidth: 1,
-    marginBottom: 16,
-  },
-  previewLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 12,
-  },
-  previewText: {
-    fontSize: 17,
-    lineHeight: 26,
   },
   tagsContainer: {
     flexDirection: "row",
@@ -578,63 +700,20 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     justifyContent: "center",
   },
-  tag: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  tagText: {
-    fontSize: 13,
-  },
+  tag: {},
   actionButtons: {
     flexDirection: "row",
-    gap: 12,
+    width: "100%",
   },
   actionButton: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 16,
-    borderRadius: 12,
-    gap: 8,
   },
-  secondaryButton: {
-    borderWidth: 1,
-  },
-  primaryButton: {},
-  actionButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  // Duplicate detection styles
   duplicateIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
     alignItems: "center",
     justifyContent: "center",
     alignSelf: "center",
-    marginBottom: 16,
-  },
-  duplicateTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  duplicateSubtext: {
-    fontSize: 15,
-    textAlign: "center",
-    marginBottom: 24,
-  },
-  existingTitle: {
-    fontSize: 17,
-    fontWeight: "600",
-    marginBottom: 8,
-  },
-  existingContent: {
-    fontSize: 15,
-    lineHeight: 22,
   },
 });

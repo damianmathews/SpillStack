@@ -6,20 +6,27 @@ import { cleanupTranscription, processIdea } from "@/services/ai";
 
 const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
 
+const MAX_RECORDING_TIME = 60; // 1 minute max
+const COUNTDOWN_WARNING_START = 50; // Start countdown at 50 seconds (10 seconds left)
+
 export function useVoiceRecording(onTranscriptionComplete) {
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
-  const [recorderState, setRecorderState] = useState({ currentTime: 0 });
+  const [recorderState, setRecorderState] = useState({ currentTime: 0, timeRemaining: null, showCountdown: false });
 
   const recordingRef = useRef(null);
   const timerRef = useRef(null);
   const startTimeRef = useRef(null);
+  const autoStopRef = useRef(null);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
+      }
+      if (autoStopRef.current) {
+        clearTimeout(autoStopRef.current);
       }
       if (recordingRef.current) {
         recordingRef.current.stopAndUnloadAsync().catch(() => {});
@@ -76,12 +83,20 @@ export function useVoiceRecording(onTranscriptionComplete) {
 
       // Start timer
       startTimeRef.current = Date.now();
-      setRecorderState({ currentTime: 0 });
+      setRecorderState({ currentTime: 0, timeRemaining: null, showCountdown: false });
 
       timerRef.current = setInterval(() => {
         const elapsed = (Date.now() - startTimeRef.current) / 1000;
-        setRecorderState({ currentTime: elapsed });
+        const timeRemaining = Math.max(0, Math.ceil(MAX_RECORDING_TIME - elapsed));
+        const showCountdown = elapsed >= COUNTDOWN_WARNING_START;
+        setRecorderState({ currentTime: elapsed, timeRemaining, showCountdown });
       }, 100);
+
+      // Set auto-stop timeout at max time
+      autoStopRef.current = setTimeout(async () => {
+        console.log("Max recording time reached, auto-stopping...");
+        await stopRecording();
+      }, MAX_RECORDING_TIME * 1000);
 
       console.log("Recording started successfully");
       return true;
@@ -98,6 +113,12 @@ export function useVoiceRecording(onTranscriptionComplete) {
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
+      }
+
+      // Clear auto-stop timeout
+      if (autoStopRef.current) {
+        clearTimeout(autoStopRef.current);
+        autoStopRef.current = null;
       }
 
       if (!recordingRef.current) {
@@ -169,7 +190,7 @@ export function useVoiceRecording(onTranscriptionComplete) {
       );
     } finally {
       setIsTranscribing(false);
-      setRecorderState({ currentTime: 0 });
+      setRecorderState({ currentTime: 0, timeRemaining: null, showCountdown: false });
     }
   };
 

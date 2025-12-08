@@ -9,11 +9,13 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
 import {
   Circle,
   CheckCircle2,
   Trash2,
   ListTodo,
+  ArrowLeft,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 
@@ -27,7 +29,7 @@ import { sampleTasks } from "@/data/sampleData";
 
 const TASKS_STORAGE_KEY = "@spillstack_tasks";
 
-export default function TasksPage() {
+export default function LibraryTasksPage() {
   const insets = useSafeAreaInsets();
   const { theme, isDark } = useTheme();
 
@@ -137,25 +139,27 @@ export default function TasksPage() {
         flexDirection: "row",
         alignItems: "center",
         backgroundColor: theme.colors.surface.level1,
-        borderRadius: theme.radius.lg,
+        borderRadius: theme.radius.md,
         borderWidth: 1,
         borderColor: theme.colors.border.subtle,
-        padding: theme.spacing.lg,
-        marginBottom: theme.spacing.md,
+        paddingVertical: theme.spacing.sm + 2,
+        paddingHorizontal: theme.spacing.md,
+        marginBottom: theme.spacing.sm,
       }}
     >
       <TouchableOpacity
         onPress={() => toggleTask(task.id)}
-        style={{ marginRight: theme.spacing.lg - 2 }}
+        style={{ marginRight: theme.spacing.md }}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
         {task.completed ? (
           <CheckCircle2
-            size={24}
+            size={20}
             color={theme.colors.accent.secondary}
             fill={theme.colors.accent.secondary}
           />
         ) : (
-          <Circle size={24} color={theme.colors.text.muted} />
+          <Circle size={20} color={theme.colors.text.muted} />
         )}
       </TouchableOpacity>
 
@@ -163,26 +167,26 @@ export default function TasksPage() {
         <AppText
           variant="body"
           color={task.completed ? "muted" : "primary"}
+          numberOfLines={1}
           style={{
             textDecorationLine: task.completed ? "line-through" : "none",
+            opacity: task.completed ? 0.7 : 1,
           }}
         >
           {task.title}
         </AppText>
-        <AppText
-          variant="caption"
-          color="muted"
-          style={{ marginTop: theme.spacing.xs }}
-        >
-          {formatDate(task.created_at)}
-        </AppText>
       </View>
+
+      <AppText variant="caption" color="muted" style={{ marginRight: theme.spacing.sm }}>
+        {formatDate(task.created_at)}
+      </AppText>
 
       <TouchableOpacity
         onPress={() => deleteTask(task.id)}
-        style={{ padding: theme.spacing.sm }}
+        style={{ padding: theme.spacing.xs }}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
-        <Trash2 size={18} color={theme.colors.text.muted} />
+        <Trash2 size={16} color={theme.colors.text.muted} />
       </TouchableOpacity>
     </View>
   );
@@ -291,6 +295,9 @@ export default function TasksPage() {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         title="Tasks"
+        showBackButton
+        onBackPress={() => router.back()}
+        backLabel="Library"
       />
 
       <FlatList

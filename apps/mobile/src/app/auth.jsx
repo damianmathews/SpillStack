@@ -12,7 +12,8 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useTheme } from "@/contexts/ThemeContext";
+import { LinearGradient } from "expo-linear-gradient";
+import { useTheme, gradients } from "@/contexts/ThemeContext";
 import { useFirebaseAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner-native";
 import Svg, { Path } from "react-native-svg";
@@ -109,140 +110,159 @@ export default function AuthScreen() {
     }
   };
 
+  // Dark blue background color from the theme
+  const darkBgColor = "#050811";
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.keyboardView}
-      >
-        <View style={styles.content}>
-          <View style={styles.header}>
-            <Text style={[styles.logo, { color: theme.colors.text }]}>S</Text>
-            <Text style={[styles.title, { color: theme.colors.text }]}>
-              SpillStack
-            </Text>
-            <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
-              {isLogin ? "Welcome back" : "Create your account"}
-            </Text>
-          </View>
+    <View style={[styles.container, { backgroundColor: darkBgColor }]}>
+      {/* Subtle gradient overlay */}
+      <LinearGradient
+        colors={["rgba(79, 125, 255, 0.15)", "transparent"]}
+        style={StyleSheet.absoluteFillObject}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 0.5 }}
+      />
 
-          <View style={styles.form}>
-            {/* Apple Sign In Button */}
-            <AppleAuthentication.AppleAuthenticationButton
-              buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
-              buttonStyle={isDark ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-              cornerRadius={12}
-              style={styles.appleButton}
-              onPress={handleAppleSignIn}
-            />
-
-            {/* Google Sign In Button */}
-            <TouchableOpacity
-              style={[
-                styles.googleButton,
-                {
-                  backgroundColor: "#fff",
-                  borderColor: theme.colors.border,
-                },
-              ]}
-              onPress={handleGoogleSignIn}
-              disabled={googleLoading}
-              activeOpacity={0.7}
-            >
-              {googleLoading ? (
-                <ActivityIndicator color="#000" />
-              ) : (
-                <>
-                  <GoogleLogo size={20} />
-                  <Text style={styles.googleButtonText}>
-                    Continue with Google
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
-
-            {/* Divider */}
-            <View style={styles.divider}>
-              <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
-              <Text style={[styles.dividerText, { color: theme.colors.textTertiary }]}>
-                or
+      <SafeAreaView style={styles.safeArea}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.keyboardView}
+        >
+          <View style={styles.content}>
+            <View style={styles.header}>
+              {/* Logo Image - white version */}
+              <Image
+                source={require("../../assets/spillstack-logo-white.png")}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+              <Text style={[theme.typography.body, { color: "#FFFFFF", marginTop: -45, fontStyle: "italic" }]}>
+                {isLogin ? "Welcome back" : "Create your account"}
               </Text>
-              <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
             </View>
 
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: theme.colors.card,
-                  borderColor: theme.colors.border,
-                  color: theme.colors.text,
-                },
-              ]}
-              placeholder="Email"
-              placeholderTextColor={theme.colors.textTertiary}
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              autoCorrect={false}
-            />
+            <View style={styles.form}>
+              {/* Apple Sign In Button */}
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+                buttonStyle={isDark ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                cornerRadius={12}
+                style={styles.appleButton}
+                onPress={handleAppleSignIn}
+              />
 
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: theme.colors.card,
-                  borderColor: theme.colors.border,
-                  color: theme.colors.text,
-                },
-              ]}
-              placeholder="Password"
-              placeholderTextColor={theme.colors.textTertiary}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoCapitalize="none"
-            />
+              {/* Google Sign In Button */}
+              <TouchableOpacity
+                style={[
+                  styles.googleButton,
+                  {
+                    backgroundColor: "#fff",
+                    borderColor: theme.colors.border.subtle,
+                  },
+                ]}
+                onPress={handleGoogleSignIn}
+                disabled={googleLoading}
+                activeOpacity={0.7}
+              >
+                {googleLoading ? (
+                  <ActivityIndicator color="#000" />
+                ) : (
+                  <>
+                    <GoogleLogo size={20} />
+                    <Text style={styles.googleButtonText}>
+                      Continue with Google
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[
-                styles.button,
-                { backgroundColor: theme.colors.primary },
-                loading && styles.buttonDisabled,
-              ]}
-              onPress={handleSubmit}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.buttonText}>
-                  {isLogin ? "Sign In" : "Create Account"}
+              {/* Divider */}
+              <View style={styles.divider}>
+                <View style={[styles.dividerLine, { backgroundColor: "#222B3D" }]} />
+                <Text style={[theme.typography.subhead, { color: "#818BA3" }]}>
+                  or
                 </Text>
-              )}
-            </TouchableOpacity>
+                <View style={[styles.dividerLine, { backgroundColor: "#222B3D" }]} />
+              </View>
 
-            <TouchableOpacity
-              style={styles.switchButton}
-              onPress={() => setIsLogin(!isLogin)}
-            >
-              <Text style={[styles.switchText, { color: theme.colors.textSecondary }]}>
-                {isLogin ? "Don't have an account? " : "Already have an account? "}
-                <Text style={{ color: theme.colors.primary }}>
-                  {isLogin ? "Sign Up" : "Sign In"}
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: "#0C1220",
+                    borderColor: "#222B3D",
+                    color: "#F4F6FF",
+                  },
+                ]}
+                placeholder="Email"
+                placeholderTextColor="#818BA3"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoCorrect={false}
+              />
+
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: "#0C1220",
+                    borderColor: "#222B3D",
+                    color: "#F4F6FF",
+                  },
+                ]}
+                placeholder="Password"
+                placeholderTextColor="#818BA3"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                autoCapitalize="none"
+              />
+
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  { backgroundColor: "#22C55E" },
+                  loading && styles.buttonDisabled,
+                ]}
+                onPress={handleSubmit}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.buttonText}>
+                    {isLogin ? "Sign In" : "Create Account"}
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.switchButton}
+                onPress={() => setIsLogin(!isLogin)}
+              >
+                <Text style={[theme.typography.subhead, { color: "#B7C0D8" }]}>
+                  {isLogin ? "Don't have an account? " : "Already have an account? "}
+                  <Text style={{ color: "#4F7DFF", fontWeight: "600" }}>
+                    {isLogin ? "Sign Up" : "Sign In"}
+                  </Text>
                 </Text>
-              </Text>
-            </TouchableOpacity>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   );
 }
 
+// Static styles only - theme-dependent styles are inline
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  safeArea: {
     flex: 1,
   },
   keyboardView: {
@@ -258,27 +278,18 @@ const styles = StyleSheet.create({
     marginBottom: 48,
   },
   logo: {
-    fontSize: 72,
-    fontWeight: "900",
-    marginBottom: 8,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
+    width: 594,
+    height: 149,
   },
   form: {
     gap: 16,
   },
   appleButton: {
-    height: 52,
+    height: 48,
     width: "100%",
   },
   googleButton: {
-    height: 52,
+    height: 48,
     borderRadius: 12,
     borderWidth: 1,
     flexDirection: "row",
@@ -300,18 +311,15 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 1,
   },
-  dividerText: {
-    fontSize: 14,
-  },
   input: {
-    height: 52,
+    height: 48,
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 16,
     fontSize: 16,
   },
   button: {
-    height: 52,
+    height: 48,
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
@@ -328,8 +336,5 @@ const styles = StyleSheet.create({
   switchButton: {
     alignItems: "center",
     marginTop: 16,
-  },
-  switchText: {
-    fontSize: 14,
   },
 });

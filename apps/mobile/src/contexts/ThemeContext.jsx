@@ -11,227 +11,320 @@ export const useTheme = () => {
   return context;
 };
 
-// SpillStack Dark Theme - Premium, Framer-inspired
-const darkTheme = {
-  mode: "dark",
-  colors: {
-    // Core
-    background: "#0A0A0B",
-    surface: "#141416",
-    card: "#1C1C1F",
-    cardHover: "#242428",
+// =============================================================================
+// EDITORIAL PRODUCTIVITY DESIGN SYSTEM
+// Dark, professional, calm ambient gradients - Linear/Notion/Raycast aesthetic
+// =============================================================================
 
-    // Accent
-    primary: "#E91E63",
-    primaryLight: "#F8BBD9",
-    primaryDark: "#AD1457",
-    secondary: "#00BFA5",
-    secondaryLight: "#64FFDA",
+// Color tokens - exact spec values
+const colors = {
+  dark: {
+    // Background hierarchy
+    background: {
+      default: "#050811",
+      alt: "#070C18",
+    },
 
-    // Text
-    text: "#FFFFFF",
-    textSecondary: "#9CA3AF",
-    textTertiary: "#6B7280",
-    textMuted: "#4B5563",
+    // Surface elevation
+    surface: {
+      level1: "#0C1220",
+      level2: "#131A2B",
+      level3: "#181F30",
+    },
 
     // Borders
-    border: "#2A2A2E",
-    borderLight: "#3A3A3F",
+    border: {
+      subtle: "#222B3D",
+    },
+
+    // Text hierarchy
+    text: {
+      primary: "#F4F6FF",
+      secondary: "#B7C0D8",
+      muted: "#818BA3",
+    },
+
+    // Accent colors
+    accent: {
+      primary: "#4F7DFF",
+      secondary: "#22C8C2",
+      softBg: "#101B36",
+      softBorder: "#304272",
+    },
 
     // Status
-    error: "#EF4444",
-    success: "#10B981",
+    success: "#22C55E",
+    warning: "#FBBF24",
+    danger: "#FB7185",
+
+    // Legacy mappings for backward compatibility
+    card: "#0C1220",
+    primary: "#4F7DFF",
+    secondary: "#22C8C2",
+    error: "#FB7185",
+    textSecondary: "#B7C0D8",
+    textTertiary: "#818BA3",
+  },
+  light: {
+    // Light mode - professional light theme
+    background: {
+      default: "#F8FAFC",
+      alt: "#F1F5F9",
+    },
+    surface: {
+      level1: "#FFFFFF",
+      level2: "#F8FAFC",
+      level3: "#F1F5F9",
+    },
+    border: {
+      subtle: "#E2E8F0",
+    },
+    text: {
+      primary: "#0F172A",
+      secondary: "#475569",
+      muted: "#94A3B8",
+    },
+    accent: {
+      primary: "#4F7DFF",
+      secondary: "#14B8A6",
+      softBg: "#EEF4FF",
+      softBorder: "#BFDBFE",
+    },
+    success: "#22C55E",
     warning: "#F59E0B",
-    info: "#3B82F6",
-
-    // Special
-    overlay: "rgba(0, 0, 0, 0.7)",
-    glass: "rgba(28, 28, 31, 0.8)",
-    glassBorder: "rgba(255, 255, 255, 0.08)",
-  },
-  gradients: {
-    primary: ["#E91E63", "#AD1457"],
-    secondary: ["#00BFA5", "#00897B"],
-    accent: ["#7C3AED", "#4F46E5"],
-    surface: ["#1C1C1F", "#141416"],
-    card: ["rgba(28, 28, 31, 0.9)", "rgba(20, 20, 22, 0.9)"],
-    pink: ["#E91E63", "#EC407A"],
-    teal: ["#00BFA5", "#26A69A"],
-  },
-  shadows: {
-    small: {
-      shadowColor: "#000000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.3,
-      shadowRadius: 4,
-      elevation: 3,
-    },
-    medium: {
-      shadowColor: "#000000",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.4,
-      shadowRadius: 8,
-      elevation: 6,
-    },
-    large: {
-      shadowColor: "#000000",
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.5,
-      shadowRadius: 16,
-      elevation: 12,
-    },
-    glow: {
-      shadowColor: "#E91E63",
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.4,
-      shadowRadius: 12,
-      elevation: 8,
-    },
-  },
-  spacing: {
-    xs: 4,
-    sm: 8,
-    md: 16,
-    lg: 24,
-    xl: 32,
-    xxl: 48,
-  },
-  borderRadius: {
-    sm: 8,
-    md: 12,
-    lg: 16,
-    xl: 24,
-    full: 9999,
-  },
-  typography: {
-    largeTitle: {
-      fontSize: 34,
-      fontWeight: "700",
-      letterSpacing: -0.5,
-    },
-    title1: {
-      fontSize: 28,
-      fontWeight: "700",
-      letterSpacing: -0.3,
-    },
-    title2: {
-      fontSize: 22,
-      fontWeight: "600",
-      letterSpacing: -0.2,
-    },
-    title3: {
-      fontSize: 20,
-      fontWeight: "600",
-    },
-    headline: {
-      fontSize: 17,
-      fontWeight: "600",
-    },
-    body: {
-      fontSize: 17,
-      fontWeight: "400",
-    },
-    callout: {
-      fontSize: 16,
-      fontWeight: "400",
-    },
-    subhead: {
-      fontSize: 15,
-      fontWeight: "400",
-    },
-    footnote: {
-      fontSize: 13,
-      fontWeight: "400",
-    },
-    caption1: {
-      fontSize: 12,
-      fontWeight: "400",
-    },
-    caption2: {
-      fontSize: 11,
-      fontWeight: "400",
-    },
-  },
-};
-
-// Light theme (keeping for toggle option, but dark is default)
-const lightTheme = {
-  mode: "light",
-  colors: {
-    background: "#F8F9FA",
-    surface: "#FFFFFF",
+    danger: "#F43F5E",
+    // Legacy mappings
     card: "#FFFFFF",
-    cardHover: "#F3F4F6",
-
-    primary: "#E91E63",
-    primaryLight: "#F8BBD9",
-    primaryDark: "#AD1457",
-    secondary: "#00BFA5",
-    secondaryLight: "#B2DFDB",
-
-    text: "#111827",
-    textSecondary: "#4B5563",
-    textTertiary: "#9CA3AF",
-    textMuted: "#D1D5DB",
-
-    border: "#E5E7EB",
-    borderLight: "#F3F4F6",
-
-    error: "#EF4444",
-    success: "#10B981",
-    warning: "#F59E0B",
-    info: "#3B82F6",
-
-    overlay: "rgba(0, 0, 0, 0.5)",
-    glass: "rgba(255, 255, 255, 0.8)",
-    glassBorder: "rgba(0, 0, 0, 0.08)",
+    primary: "#4F7DFF",
+    secondary: "#14B8A6",
+    error: "#F43F5E",
+    textSecondary: "#475569",
+    textTertiary: "#94A3B8",
   },
-  gradients: {
-    primary: ["#E91E63", "#AD1457"],
-    secondary: ["#00BFA5", "#00897B"],
-    accent: ["#7C3AED", "#4F46E5"],
-    surface: ["#FFFFFF", "#F8F9FA"],
-    card: ["rgba(255, 255, 255, 0.9)", "rgba(248, 249, 250, 0.9)"],
-    pink: ["#E91E63", "#EC407A"],
-    teal: ["#00BFA5", "#26A69A"],
-  },
-  shadows: {
-    small: {
-      shadowColor: "#000000",
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.08,
-      shadowRadius: 2,
-      elevation: 2,
-    },
-    medium: {
-      shadowColor: "#000000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 4,
-    },
-    large: {
-      shadowColor: "#000000",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.12,
-      shadowRadius: 8,
-      elevation: 8,
-    },
-    glow: {
-      shadowColor: "#E91E63",
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.3,
-      shadowRadius: 8,
-      elevation: 6,
-    },
-  },
-  spacing: darkTheme.spacing,
-  borderRadius: darkTheme.borderRadius,
-  typography: darkTheme.typography,
 };
+
+// Gradients - controlled ambient flavor
+export const gradients = {
+  accent: ["#4F7DFF", "#22C8C2"],
+  header: ["rgba(79, 125, 255, 0.2)", "transparent"],
+  fab: ["#22C55E", "#FFFFFF"],
+  surface: {
+    dark: ["#131A2B", "#0C1220"],
+    light: ["#FFFFFF", "#F8FAFC"],
+  },
+};
+
+// Category colors
+export const categoryColors = {
+  All: "#4F7DFF",
+  Ideas: "#8B5CF6",
+  Learning: "#3B82F6",
+  Projects: "#14B8A6",
+  Research: "#F97316",
+  Personal: "#EC4899",
+  "Business Ideas": "#8B5CF6",
+  "To Do": "#06B6D4",
+};
+
+// 8pt spacing system
+const spacing = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 24,
+  xxl: 32,
+};
+
+// Border radius
+const radius = {
+  sm: 8,
+  md: 12,
+  lg: 16,
+  pill: 999,
+};
+
+// Component heights
+const componentHeight = {
+  input: 48,
+  button: 48,
+  buttonSmall: 40,
+  chip: 32,
+  iconButton: 40,
+  iconButtonSmall: 32,
+  tabBar: 84,
+  fab: 56,
+};
+
+// Typography scale
+const typography = {
+  display: {
+    fontSize: 32,
+    fontWeight: "600",
+    lineHeight: 38,
+    letterSpacing: -0.5,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "600",
+    lineHeight: 28,
+    letterSpacing: -0.3,
+  },
+  subtitle: {
+    fontSize: 14,
+    fontWeight: "500",
+    lineHeight: 20,
+    letterSpacing: 0.5,
+  },
+  body: {
+    fontSize: 16,
+    fontWeight: "400",
+    lineHeight: 24,
+    letterSpacing: 0,
+  },
+  bodyMedium: {
+    fontSize: 16,
+    fontWeight: "500",
+    lineHeight: 24,
+    letterSpacing: 0,
+  },
+  caption: {
+    fontSize: 12,
+    fontWeight: "400",
+    lineHeight: 16,
+    letterSpacing: 0,
+  },
+  // Legacy mappings
+  largeTitle: {
+    fontSize: 32,
+    fontWeight: "600",
+    lineHeight: 38,
+    letterSpacing: -0.5,
+  },
+  title1: {
+    fontSize: 26,
+    fontWeight: "700",
+    lineHeight: 32,
+    letterSpacing: -0.3,
+  },
+  title2: {
+    fontSize: 22,
+    fontWeight: "600",
+    lineHeight: 28,
+    letterSpacing: -0.2,
+  },
+  title3: {
+    fontSize: 18,
+    fontWeight: "600",
+    lineHeight: 24,
+    letterSpacing: 0,
+  },
+  headline: {
+    fontSize: 16,
+    fontWeight: "600",
+    lineHeight: 22,
+    letterSpacing: 0,
+  },
+  subhead: {
+    fontSize: 14,
+    fontWeight: "400",
+    lineHeight: 20,
+    letterSpacing: 0,
+  },
+  subheadMedium: {
+    fontSize: 14,
+    fontWeight: "500",
+    lineHeight: 20,
+    letterSpacing: 0,
+  },
+  footnote: {
+    fontSize: 13,
+    fontWeight: "400",
+    lineHeight: 18,
+    letterSpacing: 0,
+  },
+  footnoteMedium: {
+    fontSize: 13,
+    fontWeight: "500",
+    lineHeight: 18,
+    letterSpacing: 0,
+  },
+  caption1: {
+    fontSize: 12,
+    fontWeight: "400",
+    lineHeight: 16,
+    letterSpacing: 0,
+  },
+  caption1Medium: {
+    fontSize: 12,
+    fontWeight: "500",
+    lineHeight: 16,
+    letterSpacing: 0,
+  },
+  caption2: {
+    fontSize: 11,
+    fontWeight: "400",
+    lineHeight: 14,
+    letterSpacing: 0.2,
+  },
+};
+
+// Elevation / shadows
+const elevation = {
+  none: {},
+  low: {
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  mid: {
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  high: {
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+};
+
+// Motion tokens
+const motion = {
+  fast: 150,
+  normal: 220,
+  slow: 280,
+};
+
+// Build theme object
+const buildTheme = (mode) => ({
+  mode,
+  colors: colors[mode],
+  gradients,
+  categoryColors,
+  spacing,
+  radius,
+  borderRadius: radius, // alias for backward compatibility
+  componentHeight,
+  typography,
+  elevation,
+  shadows: { // alias for backward compatibility
+    [mode]: elevation,
+  },
+  motion,
+});
+
+const darkTheme = buildTheme("dark");
+const lightTheme = buildTheme("light");
 
 export const ThemeProvider = ({ children }) => {
-  const [isDark, setIsDark] = useState(true); // Default to dark
+  const [isDark, setIsDark] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -268,6 +361,8 @@ export const ThemeProvider = ({ children }) => {
     isDark,
     toggleTheme,
     isLoading,
+    categoryColors,
+    gradients,
   };
 
   if (isLoading) {

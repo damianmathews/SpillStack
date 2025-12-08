@@ -32,14 +32,22 @@ export function LinkModal({ visible, onClose }) {
           <View style={styles.header}>
             <TouchableOpacity
               onPress={onClose}
-              style={[styles.closeButton, { backgroundColor: theme.colors.surface }]}
+              style={[
+                styles.iconButton,
+                {
+                  backgroundColor: theme.colors.surface,
+                  height: theme.componentHeight.iconButton,
+                  width: theme.componentHeight.iconButton,
+                  borderRadius: theme.componentHeight.iconButton / 2,
+                },
+              ]}
             >
-              <X size={20} color={theme.colors.text} />
+              <X size={20} color={theme.colors.text} strokeWidth={2} />
             </TouchableOpacity>
-            <Text style={[styles.title, { color: theme.colors.text }]}>
+            <Text style={[theme.typography.headline, { color: theme.colors.text }]}>
               Save Link
             </Text>
-            <View style={{ width: 40 }} />
+            <View style={{ width: theme.componentHeight.iconButton }} />
           </View>
 
           {/* Content */}
@@ -50,35 +58,73 @@ export function LinkModal({ visible, onClose }) {
                 {
                   backgroundColor: theme.colors.card,
                   borderColor: theme.colors.border,
+                  borderRadius: theme.borderRadius.xl,
+                  padding: theme.spacing.xxxl,
                 },
               ]}
             >
               <View
                 style={[
                   styles.iconContainer,
-                  { backgroundColor: theme.colors.surface },
+                  {
+                    backgroundColor: theme.colors.surface,
+                    width: 72,
+                    height: 72,
+                    borderRadius: 36,
+                    marginBottom: theme.spacing.xl,
+                  },
                 ]}
               >
-                <Link size={32} color={theme.colors.info} />
+                <Link size={32} color={theme.colors.info} strokeWidth={2} />
               </View>
 
-              <View style={styles.badge}>
-                <Clock size={12} color={theme.colors.warning} />
-                <Text style={[styles.badgeText, { color: theme.colors.warning }]}>
+              <View
+                style={[
+                  styles.badge,
+                  {
+                    backgroundColor: `${theme.colors.warning}15`,
+                    borderRadius: theme.borderRadius.md,
+                    paddingHorizontal: theme.spacing.md,
+                    paddingVertical: theme.spacing.xs,
+                    marginBottom: theme.spacing.lg,
+                  },
+                ]}
+              >
+                <Clock size={12} color={theme.colors.warning} strokeWidth={2} />
+                <Text
+                  style={[
+                    theme.typography.caption1Medium,
+                    { color: theme.colors.warning, marginLeft: theme.spacing.xs },
+                  ]}
+                >
                   Coming Soon
                 </Text>
               </View>
 
-              <Text style={[styles.comingTitle, { color: theme.colors.text }]}>
+              <Text
+                style={[
+                  theme.typography.title2,
+                  { color: theme.colors.text, marginBottom: theme.spacing.md },
+                ]}
+              >
                 Link Capture
               </Text>
 
-              <Text style={[styles.comingDescription, { color: theme.colors.textSecondary }]}>
+              <Text
+                style={[
+                  theme.typography.callout,
+                  {
+                    color: theme.colors.textSecondary,
+                    textAlign: "center",
+                    marginBottom: theme.spacing.xxl,
+                  },
+                ]}
+              >
                 Paste any URL and our AI will automatically extract the key information,
                 summarize the content, and save it as an idea.
               </Text>
 
-              <View style={styles.features}>
+              <View style={[styles.features, { gap: theme.spacing.md }]}>
                 {[
                   "Extract article content",
                   "Summarize key points",
@@ -89,11 +135,19 @@ export function LinkModal({ visible, onClose }) {
                     <View
                       style={[
                         styles.featureDot,
-                        { backgroundColor: theme.colors.primary },
+                        {
+                          backgroundColor: theme.colors.primary,
+                          width: 6,
+                          height: 6,
+                          borderRadius: 3,
+                        },
                       ]}
                     />
                     <Text
-                      style={[styles.featureText, { color: theme.colors.textSecondary }]}
+                      style={[
+                        theme.typography.subhead,
+                        { color: theme.colors.textSecondary, marginLeft: theme.spacing.md },
+                      ]}
                     >
                       {feature}
                     </Text>
@@ -105,11 +159,17 @@ export function LinkModal({ visible, onClose }) {
             <TouchableOpacity
               style={[
                 styles.closeFullButton,
-                { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+                {
+                  backgroundColor: theme.colors.surface,
+                  borderColor: theme.colors.border,
+                  borderRadius: theme.borderRadius.md,
+                  height: theme.componentHeight.button,
+                  marginTop: theme.spacing.xl,
+                },
               ]}
               onPress={onClose}
             >
-              <Text style={[styles.closeFullButtonText, { color: theme.colors.text }]}>
+              <Text style={[theme.typography.bodyMedium, { color: theme.colors.text }]}>
                 Got it
               </Text>
             </TouchableOpacity>
@@ -131,16 +191,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
   },
-  closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  iconButton: {
     alignItems: "center",
     justifyContent: "center",
-  },
-  title: {
-    fontSize: 17,
-    fontWeight: "600",
   },
   content: {
     flex: 1,
@@ -150,71 +203,29 @@ const styles = StyleSheet.create({
   },
   comingSoonCard: {
     width: "100%",
-    padding: 32,
-    borderRadius: 20,
     borderWidth: 1,
     alignItems: "center",
   },
   iconContainer: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 20,
   },
   badge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    backgroundColor: "rgba(245, 158, 11, 0.1)",
-    marginBottom: 16,
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  comingTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 12,
-  },
-  comingDescription: {
-    fontSize: 15,
-    lineHeight: 22,
-    textAlign: "center",
-    marginBottom: 24,
   },
   features: {
     width: "100%",
-    gap: 12,
   },
   featureRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
   },
-  featureDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  featureText: {
-    fontSize: 14,
-  },
+  featureDot: {},
   closeFullButton: {
     width: "100%",
-    paddingVertical: 16,
-    borderRadius: 12,
     alignItems: "center",
-    marginTop: 20,
+    justifyContent: "center",
     borderWidth: 1,
-  },
-  closeFullButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
   },
 });

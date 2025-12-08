@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
   View,
-  Text,
   ScrollView,
   TouchableOpacity,
   TextInput,
@@ -23,17 +22,17 @@ import {
   X,
   Clock,
   Tag,
-  Eye,
   ChevronDown,
   Plus,
   Sparkles,
   Link2,
 } from "lucide-react-native";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme, categoryColors, gradients } from "@/contexts/ThemeContext";
 import { useQuery } from "@tanstack/react-query";
 import { sampleIdeas, categories } from "@/data/sampleData";
 import { getStoredIdeas, useUpdateIdea, useDeleteIdea } from "@/hooks/useCreateIdea";
 import { findSimilarIdeas } from "@/services/ai";
+import { AppText } from "@/components/primitives";
 import * as Haptics from "expo-haptics";
 
 export default function IdeaDetailScreen() {
@@ -187,22 +186,12 @@ export default function IdeaDetailScreen() {
     });
   };
 
-  const getCategoryGradient = (category) => {
-    const categoryMap = {
-      Ideas: theme.gradients.primary,
-      Learning: theme.gradients.cool,
-      Projects: theme.gradients.accent,
-      Inspiration: theme.gradients.warm,
-      Research: theme.gradients.secondary,
-      Personal: theme.gradients.primary,
-      "Business Ideas": ["#4ECDC4", "#6EDDD6"],
-    };
-    return categoryMap[category] || theme.gradients.primary;
+  const getCategoryGradient = () => {
+    return gradients.accent;
   };
 
   const getCategoryColor = (categoryName) => {
-    const cat = categories.find((c) => c.name === categoryName);
-    return cat?.color || theme.colors.primary;
+    return categoryColors[categoryName] || theme.colors.accent.primary;
   };
 
   // Get similar idea objects
@@ -215,42 +204,42 @@ export default function IdeaDetailScreen() {
       <View
         style={{
           flex: 1,
-          backgroundColor: theme.colors.background,
+          backgroundColor: theme.colors.background.default,
           alignItems: "center",
           justifyContent: "center",
-          padding: 20,
+          padding: theme.spacing.xl,
         }}
       >
-        <Text style={{ color: theme.colors.error, textAlign: "center" }}>
+        <AppText variant="body" color="primary" style={{ textAlign: "center" }}>
           Idea not found.
-        </Text>
+        </AppText>
         <TouchableOpacity
           onPress={() => router.back()}
           style={{
-            marginTop: 16,
-            backgroundColor: theme.colors.primary,
-            paddingHorizontal: 20,
-            paddingVertical: 10,
-            borderRadius: 8,
+            marginTop: theme.spacing.lg,
+            backgroundColor: theme.colors.accent.primary,
+            paddingHorizontal: theme.spacing.xl,
+            paddingVertical: theme.spacing.md,
+            borderRadius: theme.radius.sm,
           }}
         >
-          <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>Go Back</Text>
+          <AppText variant="body" style={{ color: "#FFFFFF" }}>Go Back</AppText>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.background.default }}>
       <StatusBar style={isDark ? "light" : "dark"} />
 
       {/* Header with gradient */}
       <LinearGradient
-        colors={getCategoryGradient(idea.category)}
+        colors={getCategoryGradient()}
         style={{
-          paddingTop: insets.top + 16,
-          paddingBottom: 20,
-          paddingHorizontal: 20,
+          paddingTop: insets.top + theme.spacing.lg,
+          paddingBottom: theme.spacing.xl,
+          paddingHorizontal: theme.spacing.xl,
         }}
       >
         <View
@@ -263,9 +252,9 @@ export default function IdeaDetailScreen() {
           <TouchableOpacity
             onPress={() => router.back()}
             style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
+              width: theme.componentHeight.iconButton,
+              height: theme.componentHeight.iconButton,
+              borderRadius: theme.componentHeight.iconButton / 2,
               backgroundColor: "rgba(255,255,255,0.2)",
               alignItems: "center",
               justifyContent: "center",
@@ -274,13 +263,13 @@ export default function IdeaDetailScreen() {
             <ArrowLeft size={20} color="#FFFFFF" />
           </TouchableOpacity>
 
-          <View style={{ flexDirection: "row", gap: 12 }}>
+          <View style={{ flexDirection: "row", gap: theme.spacing.md }}>
             <TouchableOpacity
               onPress={handleShare}
               style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
+                width: theme.componentHeight.iconButton,
+                height: theme.componentHeight.iconButton,
+                borderRadius: theme.componentHeight.iconButton / 2,
                 backgroundColor: "rgba(255,255,255,0.2)",
                 alignItems: "center",
                 justifyContent: "center",
@@ -295,9 +284,9 @@ export default function IdeaDetailScreen() {
                 setIsEditing(!isEditing);
               }}
               style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
+                width: theme.componentHeight.iconButton,
+                height: theme.componentHeight.iconButton,
+                borderRadius: theme.componentHeight.iconButton / 2,
                 backgroundColor: isEditing ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.2)",
                 alignItems: "center",
                 justifyContent: "center",
@@ -313,9 +302,9 @@ export default function IdeaDetailScreen() {
             <TouchableOpacity
               onPress={handleDelete}
               style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
+                width: theme.componentHeight.iconButton,
+                height: theme.componentHeight.iconButton,
+                borderRadius: theme.componentHeight.iconButton / 2,
                 backgroundColor: "rgba(255,255,255,0.2)",
                 alignItems: "center",
                 justifyContent: "center",
@@ -327,7 +316,7 @@ export default function IdeaDetailScreen() {
         </View>
 
         {/* Title */}
-        <View style={{ marginTop: 16 }}>
+        <View style={{ marginTop: theme.spacing.lg }}>
           {isEditing ? (
             <TextInput
               value={editedTitle}
@@ -335,25 +324,18 @@ export default function IdeaDetailScreen() {
               placeholder="Title"
               placeholderTextColor="rgba(255,255,255,0.7)"
               style={{
-                fontSize: 24,
-                fontWeight: "800",
+                ...theme.typography.display,
                 color: "#FFFFFF",
-                padding: 12,
-                borderRadius: 8,
+                padding: theme.spacing.md,
+                borderRadius: theme.radius.sm,
                 backgroundColor: "rgba(255,255,255,0.1)",
               }}
               multiline
             />
           ) : (
-            <Text
-              style={{
-                fontSize: 24,
-                fontWeight: "800",
-                color: "#FFFFFF",
-              }}
-            >
+            <AppText variant="display" style={{ color: "#FFFFFF" }}>
               {idea.title}
-            </Text>
+            </AppText>
           )}
         </View>
       </LinearGradient>
@@ -361,7 +343,7 @@ export default function IdeaDetailScreen() {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
-          padding: 20,
+          padding: theme.spacing.xl,
           paddingBottom: insets.bottom + 100,
         }}
         showsVerticalScrollIndicator={false}
@@ -369,26 +351,28 @@ export default function IdeaDetailScreen() {
         {/* Metadata Card */}
         <View
           style={{
-            backgroundColor: theme.colors.card,
-            borderRadius: 16,
-            padding: 16,
-            marginBottom: 20,
+            backgroundColor: theme.colors.surface.level1,
+            borderRadius: theme.radius.lg,
+            padding: theme.spacing.lg,
+            marginBottom: theme.spacing.xl,
+            borderWidth: 1,
+            borderColor: theme.colors.border.subtle,
           }}
         >
           {/* Category */}
-          <View style={{ marginBottom: 12 }}>
-            <Text style={{ fontSize: 12, color: theme.colors.textTertiary, marginBottom: 6 }}>
+          <View style={{ marginBottom: theme.spacing.md }}>
+            <AppText variant="caption" color="muted" style={{ marginBottom: theme.spacing.sm }}>
               Category
-            </Text>
+            </AppText>
             {isEditing ? (
               <TouchableOpacity
                 onPress={() => setShowCategoryPicker(true)}
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
-                  backgroundColor: theme.colors.surface,
-                  padding: 12,
-                  borderRadius: 8,
+                  backgroundColor: theme.colors.surface.level2,
+                  padding: theme.spacing.md,
+                  borderRadius: theme.radius.sm,
                 }}
               >
                 <View
@@ -397,14 +381,14 @@ export default function IdeaDetailScreen() {
                     height: 12,
                     borderRadius: 6,
                     backgroundColor: getCategoryColor(editedCategory),
-                    marginRight: 8,
+                    marginRight: theme.spacing.sm,
                   }}
                 />
-                <Text style={{ color: theme.colors.text, flex: 1 }}>{editedCategory}</Text>
-                <ChevronDown size={16} color={theme.colors.textTertiary} />
+                <AppText variant="body" color="primary" style={{ flex: 1 }}>{editedCategory}</AppText>
+                <ChevronDown size={16} color={theme.colors.text.muted} />
               </TouchableOpacity>
             ) : (
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.sm }}>
                 <View
                   style={{
                     width: 12,
@@ -413,72 +397,57 @@ export default function IdeaDetailScreen() {
                     backgroundColor: getCategoryColor(idea.category),
                   }}
                 />
-                <Text style={{ color: theme.colors.text, fontSize: 14 }}>{idea.category}</Text>
+                <AppText variant="subtitle" color="primary">{idea.category}</AppText>
               </View>
             )}
           </View>
 
           {/* Date and source */}
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <Clock size={16} color={theme.colors.textSecondary} />
-              <Text style={{ color: theme.colors.textSecondary, fontSize: 14 }}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: theme.spacing.md }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.sm }}>
+              <Clock size={16} color={theme.colors.text.secondary} />
+              <AppText variant="subtitle" color="secondary">
                 {formatDate(idea.created_at)}
-              </Text>
+              </AppText>
             </View>
 
             {idea.source_type && (
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                {idea.source_type === "voice" && <Tag size={16} color={theme.colors.textSecondary} />}
-                {idea.source_type === "url" && <Link2 size={16} color={theme.colors.textSecondary} />}
-                {idea.source_type === "text" && <Edit3 size={16} color={theme.colors.textSecondary} />}
-                <Text style={{ color: theme.colors.textSecondary, fontSize: 14 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.sm }}>
+                {idea.source_type === "voice" && <Tag size={16} color={theme.colors.text.secondary} />}
+                {idea.source_type === "url" && <Link2 size={16} color={theme.colors.text.secondary} />}
+                {idea.source_type === "text" && <Edit3 size={16} color={theme.colors.text.secondary} />}
+                <AppText variant="subtitle" color="secondary">
                   {idea.source_type}
-                </Text>
-              </View>
-            )}
-
-            {idea.view_count > 0 && (
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <Eye size={16} color={theme.colors.textSecondary} />
-                <Text style={{ color: theme.colors.textSecondary, fontSize: 14 }}>
-                  {idea.view_count} views
-                </Text>
+                </AppText>
               </View>
             )}
           </View>
 
           {/* Tags */}
-          <View style={{ marginTop: 16 }}>
-            <Text style={{ fontSize: 12, color: theme.colors.textTertiary, marginBottom: 8 }}>
+          <View style={{ marginTop: theme.spacing.lg }}>
+            <AppText variant="caption" color="muted" style={{ marginBottom: theme.spacing.sm }}>
               Tags
-            </Text>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            </AppText>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: theme.spacing.sm }}>
               {(isEditing ? editedTags : idea.tags || []).map((tag, index) => (
                 <TouchableOpacity
                   key={index}
                   onPress={() => isEditing && removeTag(tag)}
                   disabled={!isEditing}
                   style={{
-                    backgroundColor: `${theme.colors.primary}15`,
-                    paddingHorizontal: 12,
-                    paddingVertical: 6,
-                    borderRadius: 20,
+                    backgroundColor: theme.colors.accent.softBg,
+                    paddingHorizontal: theme.spacing.md,
+                    paddingVertical: theme.spacing.sm,
+                    borderRadius: theme.radius.pill,
                     flexDirection: "row",
                     alignItems: "center",
-                    gap: 4,
+                    gap: theme.spacing.xs,
                   }}
                 >
-                  <Text
-                    style={{
-                      color: theme.colors.primary,
-                      fontSize: 12,
-                      fontWeight: "600",
-                    }}
-                  >
+                  <AppText variant="caption" style={{ color: theme.colors.accent.primary }}>
                     #{tag}
-                  </Text>
-                  {isEditing && <X size={12} color={theme.colors.primary} />}
+                  </AppText>
+                  {isEditing && <X size={12} color={theme.colors.accent.primary} />}
                 </TouchableOpacity>
               ))}
 
@@ -487,10 +456,10 @@ export default function IdeaDetailScreen() {
                   style={{
                     flexDirection: "row",
                     alignItems: "center",
-                    backgroundColor: theme.colors.surface,
-                    borderRadius: 20,
-                    paddingLeft: 12,
-                    paddingRight: 4,
+                    backgroundColor: theme.colors.surface.level2,
+                    borderRadius: theme.radius.pill,
+                    paddingLeft: theme.spacing.md,
+                    paddingRight: theme.spacing.xs,
                   }}
                 >
                   <TextInput
@@ -498,12 +467,12 @@ export default function IdeaDetailScreen() {
                     onChangeText={setNewTag}
                     onSubmitEditing={addTag}
                     placeholder="Add tag"
-                    placeholderTextColor={theme.colors.textTertiary}
+                    placeholderTextColor={theme.colors.text.muted}
                     style={{
-                      color: theme.colors.text,
-                      fontSize: 12,
+                      ...theme.typography.caption,
+                      color: theme.colors.text.primary,
                       width: 60,
-                      paddingVertical: 6,
+                      paddingVertical: theme.spacing.sm,
                     }}
                   />
                   <TouchableOpacity
@@ -512,7 +481,7 @@ export default function IdeaDetailScreen() {
                       width: 24,
                       height: 24,
                       borderRadius: 12,
-                      backgroundColor: theme.colors.primary,
+                      backgroundColor: theme.colors.accent.primary,
                       alignItems: "center",
                       justifyContent: "center",
                     }}
@@ -529,50 +498,36 @@ export default function IdeaDetailScreen() {
         {(isEditing || idea.summary) && (
           <View
             style={{
-              backgroundColor: theme.colors.surface,
-              borderRadius: 16,
-              padding: 16,
-              marginBottom: 20,
+              backgroundColor: theme.colors.surface.level2,
+              borderRadius: theme.radius.lg,
+              padding: theme.spacing.lg,
+              marginBottom: theme.spacing.xl,
             }}
           >
-            <Text
-              style={{
-                fontSize: 16,
-                fontWeight: "700",
-                color: theme.colors.text,
-                marginBottom: 12,
-              }}
-            >
+            <AppText variant="title" color="primary" style={{ marginBottom: theme.spacing.md }}>
               Summary
-            </Text>
+            </AppText>
             {isEditing ? (
               <TextInput
                 value={editedSummary}
                 onChangeText={setEditedSummary}
                 placeholder="Add a summary..."
-                placeholderTextColor={theme.colors.textTertiary}
+                placeholderTextColor={theme.colors.text.muted}
                 style={{
-                  fontSize: 16,
-                  lineHeight: 24,
-                  color: theme.colors.textSecondary,
-                  backgroundColor: theme.colors.card,
-                  padding: 12,
-                  borderRadius: 8,
+                  ...theme.typography.body,
+                  color: theme.colors.text.secondary,
+                  backgroundColor: theme.colors.surface.level1,
+                  padding: theme.spacing.md,
+                  borderRadius: theme.radius.sm,
                   minHeight: 80,
                   textAlignVertical: "top",
                 }}
                 multiline
               />
             ) : (
-              <Text
-                style={{
-                  fontSize: 16,
-                  lineHeight: 24,
-                  color: theme.colors.textSecondary,
-                }}
-              >
+              <AppText variant="body" color="secondary">
                 {idea.summary}
-              </Text>
+              </AppText>
             )}
           </View>
         )}
@@ -580,50 +535,38 @@ export default function IdeaDetailScreen() {
         {/* Content */}
         <View
           style={{
-            backgroundColor: theme.colors.card,
-            borderRadius: 16,
-            padding: 20,
-            marginBottom: 20,
+            backgroundColor: theme.colors.surface.level1,
+            borderRadius: theme.radius.lg,
+            padding: theme.spacing.xl,
+            marginBottom: theme.spacing.xl,
+            borderWidth: 1,
+            borderColor: theme.colors.border.subtle,
           }}
         >
-          <Text
-            style={{
-              fontSize: 16,
-              fontWeight: "700",
-              color: theme.colors.text,
-              marginBottom: 16,
-            }}
-          >
+          <AppText variant="title" color="primary" style={{ marginBottom: theme.spacing.lg }}>
             Content
-          </Text>
+          </AppText>
           {isEditing ? (
             <TextInput
               value={editedContent}
               onChangeText={setEditedContent}
               placeholder="Write your idea..."
-              placeholderTextColor={theme.colors.textTertiary}
+              placeholderTextColor={theme.colors.text.muted}
               style={{
-                fontSize: 16,
-                lineHeight: 24,
-                color: theme.colors.text,
-                backgroundColor: theme.colors.surface,
-                padding: 12,
-                borderRadius: 8,
+                ...theme.typography.body,
+                color: theme.colors.text.primary,
+                backgroundColor: theme.colors.surface.level2,
+                padding: theme.spacing.md,
+                borderRadius: theme.radius.sm,
                 minHeight: 200,
                 textAlignVertical: "top",
               }}
               multiline
             />
           ) : (
-            <Text
-              style={{
-                fontSize: 16,
-                lineHeight: 24,
-                color: theme.colors.text,
-              }}
-            >
+            <AppText variant="body" color="primary">
               {idea.content}
-            </Text>
+            </AppText>
           )}
         </View>
 
@@ -631,33 +574,29 @@ export default function IdeaDetailScreen() {
         {!isEditing && (
           <View
             style={{
-              backgroundColor: theme.colors.card,
-              borderRadius: 16,
-              padding: 20,
+              backgroundColor: theme.colors.surface.level1,
+              borderRadius: theme.radius.lg,
+              padding: theme.spacing.xl,
+              borderWidth: 1,
+              borderColor: theme.colors.border.subtle,
             }}
           >
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 16 }}>
-              <Sparkles size={18} color={theme.colors.secondary} />
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: "700",
-                  color: theme.colors.text,
-                }}
-              >
+            <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.sm, marginBottom: theme.spacing.lg }}>
+              <Sparkles size={18} color={theme.colors.accent.secondary} />
+              <AppText variant="title" color="primary">
                 Similar Ideas
-              </Text>
+              </AppText>
             </View>
 
             {loadingSimilar ? (
-              <View style={{ alignItems: "center", paddingVertical: 20 }}>
-                <ActivityIndicator size="small" color={theme.colors.secondary} />
-                <Text style={{ color: theme.colors.textTertiary, marginTop: 8, fontSize: 13 }}>
+              <View style={{ alignItems: "center", paddingVertical: theme.spacing.xl }}>
+                <ActivityIndicator size="small" color={theme.colors.accent.secondary} />
+                <AppText variant="caption" color="muted" style={{ marginTop: theme.spacing.sm }}>
                   Finding related ideas...
-                </Text>
+                </AppText>
               </View>
             ) : similarIdeas.length > 0 ? (
-              <View style={{ gap: 12 }}>
+              <View style={{ gap: theme.spacing.md }}>
                 {similarIdeas.map((simIdea) => (
                   <TouchableOpacity
                     key={simIdea.id}
@@ -666,32 +605,23 @@ export default function IdeaDetailScreen() {
                       router.push(`/idea/${simIdea.id}`);
                     }}
                     style={{
-                      backgroundColor: theme.colors.surface,
-                      borderRadius: 12,
-                      padding: 14,
+                      backgroundColor: theme.colors.surface.level2,
+                      borderRadius: theme.radius.md,
+                      padding: theme.spacing.lg - 2,
                     }}
                   >
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        fontWeight: "600",
-                        color: theme.colors.text,
-                        marginBottom: 4,
-                      }}
+                    <AppText
+                      variant="subtitle"
+                      color="primary"
                       numberOfLines={1}
+                      style={{ marginBottom: theme.spacing.xs }}
                     >
                       {simIdea.title}
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        color: theme.colors.textSecondary,
-                      }}
-                      numberOfLines={2}
-                    >
+                    </AppText>
+                    <AppText variant="caption" color="secondary" numberOfLines={2}>
                       {simIdea.summary || simIdea.content.substring(0, 80)}
-                    </Text>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8 }}>
+                    </AppText>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.sm, marginTop: theme.spacing.sm }}>
                       <View
                         style={{
                           width: 8,
@@ -700,17 +630,17 @@ export default function IdeaDetailScreen() {
                           backgroundColor: getCategoryColor(simIdea.category),
                         }}
                       />
-                      <Text style={{ fontSize: 11, color: theme.colors.textTertiary }}>
+                      <AppText variant="caption" color="muted">
                         {simIdea.category}
-                      </Text>
+                      </AppText>
                     </View>
                   </TouchableOpacity>
                 ))}
               </View>
             ) : (
-              <Text style={{ color: theme.colors.textTertiary, fontSize: 14, textAlign: "center" }}>
+              <AppText variant="subtitle" color="muted" style={{ textAlign: "center" }}>
                 No similar ideas found yet. Add more ideas to see connections!
-              </Text>
+              </AppText>
             )}
           </View>
         )}
@@ -721,30 +651,31 @@ export default function IdeaDetailScreen() {
         <View
           style={{
             position: "absolute",
-            bottom: insets.bottom + 20,
-            left: 20,
-            right: 20,
+            bottom: insets.bottom + theme.spacing.xl,
+            left: theme.spacing.xl,
+            right: theme.spacing.xl,
           }}
         >
           <TouchableOpacity
             onPress={handleSave}
             disabled={updateMutation.isPending}
             style={{
-              backgroundColor: theme.colors.primary,
-              borderRadius: 16,
-              paddingVertical: 16,
+              backgroundColor: theme.colors.accent.primary,
+              borderRadius: theme.radius.lg,
+              height: theme.componentHeight.button,
               alignItems: "center",
+              justifyContent: "center",
               opacity: updateMutation.isPending ? 0.7 : 1,
             }}
           >
             {updateMutation.isPending ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.sm }}>
                 <Check size={20} color="#FFFFFF" />
-                <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "700" }}>
+                <AppText variant="body" style={{ color: "#FFFFFF", fontWeight: "600" }}>
                   Save Changes
-                </Text>
+                </AppText>
               </View>
             )}
           </TouchableOpacity>
@@ -761,7 +692,7 @@ export default function IdeaDetailScreen() {
         <TouchableOpacity
           style={{
             flex: 1,
-            backgroundColor: "rgba(0,0,0,0.5)",
+            backgroundColor: "rgba(5, 8, 17, 0.8)",
             justifyContent: "center",
             alignItems: "center",
           }}
@@ -770,24 +701,22 @@ export default function IdeaDetailScreen() {
         >
           <View
             style={{
-              backgroundColor: theme.colors.card,
-              borderRadius: 16,
-              padding: 8,
+              backgroundColor: theme.colors.surface.level1,
+              borderRadius: theme.radius.lg,
+              padding: theme.spacing.sm,
               width: "80%",
               maxHeight: "60%",
+              borderWidth: 1,
+              borderColor: theme.colors.border.subtle,
             }}
           >
-            <Text
-              style={{
-                fontSize: 16,
-                fontWeight: "700",
-                color: theme.colors.text,
-                textAlign: "center",
-                paddingVertical: 12,
-              }}
+            <AppText
+              variant="title"
+              color="primary"
+              style={{ textAlign: "center", paddingVertical: theme.spacing.md }}
             >
               Select Category
-            </Text>
+            </AppText>
             <ScrollView>
               {categories
                 .filter((c) => c.name !== "All")
@@ -802,10 +731,10 @@ export default function IdeaDetailScreen() {
                     style={{
                       flexDirection: "row",
                       alignItems: "center",
-                      padding: 14,
-                      borderRadius: 8,
+                      padding: theme.spacing.lg - 2,
+                      borderRadius: theme.radius.sm,
                       backgroundColor:
-                        editedCategory === cat.name ? `${cat.color}20` : "transparent",
+                        editedCategory === cat.name ? theme.colors.accent.softBg : "transparent",
                     }}
                   >
                     <View
@@ -814,18 +743,16 @@ export default function IdeaDetailScreen() {
                         height: 16,
                         borderRadius: 8,
                         backgroundColor: cat.color,
-                        marginRight: 12,
+                        marginRight: theme.spacing.md,
                       }}
                     />
-                    <Text
-                      style={{
-                        fontSize: 15,
-                        color: theme.colors.text,
-                        fontWeight: editedCategory === cat.name ? "600" : "400",
-                      }}
+                    <AppText
+                      variant="subtitle"
+                      color="primary"
+                      style={{ fontWeight: editedCategory === cat.name ? "600" : "400" }}
                     >
                       {cat.name}
-                    </Text>
+                    </AppText>
                     {editedCategory === cat.name && (
                       <Check size={18} color={cat.color} style={{ marginLeft: "auto" }} />
                     )}

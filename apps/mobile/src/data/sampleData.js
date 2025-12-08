@@ -102,13 +102,13 @@ export const sampleTasks = [
   },
 ];
 
-// Categories with colors (To Do is separate page now)
+// Categories with refined colors (Graphite + Iris palette)
 export const categories = [
-  { name: "All", color: "#E91E63" },
-  { name: "Ideas", color: "#9C27B0" },
-  { name: "Learning", color: "#3F51B5" },
-  { name: "Projects", color: "#009688" },
-  { name: "Research", color: "#FF5722" },
-  { name: "Personal", color: "#E91E63" },
-  { name: "Business Ideas", color: "#673AB7" },
+  { name: "All", color: "#4F7DFF" },
+  { name: "Ideas", color: "#8B5CF6" },
+  { name: "Learning", color: "#3B82F6" },
+  { name: "Projects", color: "#14B8A6" },
+  { name: "Research", color: "#F97316" },
+  { name: "Personal", color: "#EC4899" },
+  { name: "Business Ideas", color: "#8B5CF6" },
 ];

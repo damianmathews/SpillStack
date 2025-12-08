@@ -1,21 +1,13 @@
-import React, { useRef } from "react";
-import { View, TextInput, Keyboard, TouchableOpacity } from "react-native";
-import { Search, ArrowLeft, X } from "lucide-react-native";
+import React from "react";
+import { View, TextInput, Keyboard, TouchableOpacity, Image } from "react-native";
+import { Search, Settings, X } from "lucide-react-native";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useFirebaseAuth } from "@/contexts/AuthContext";
 import { AppText } from "@/components/primitives";
 import * as Haptics from "expo-haptics";
 
-export function Header({
-  insets,
-  searchQuery,
-  onSearchChange,
-  title = "Ideas",
-  showBackButton = false,
-  onBackPress,
-  backLabel = "Back",
-}) {
-  const { theme } = useTheme();
+export function HomeHeader({ insets, searchQuery, onSearchChange, onSettingsPress }) {
+  const { theme, isDark } = useTheme();
   const { user } = useFirebaseAuth();
 
   // Get first name from display name (Google accounts have full name)
@@ -29,51 +21,60 @@ export function Header({
   return (
     <View
       style={{
-        paddingTop: insets.top + theme.spacing.lg,
+        paddingTop: insets.top + theme.spacing.md,
         paddingBottom: theme.spacing.lg,
         paddingHorizontal: theme.spacing.xl,
       }}
     >
-      {/* Back button or Welcome Message */}
-      {showBackButton ? (
+      {/* Top row: Logo + Welcome on left, Settings on right */}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          marginBottom: theme.spacing.lg,
+        }}
+      >
+        {/* Logo and Welcome text stacked on left */}
+        <View style={{ flex: 1, alignItems: "flex-start" }}>
+          <Image
+            source={
+              isDark
+                ? require("../../../assets/spillstack-logo-white.png")
+                : require("../../../assets/spillstack-logo-black.png")
+            }
+            style={{
+              width: 360,
+              height: 90,
+              marginLeft: -20,
+              marginBottom: theme.spacing.xs,
+            }}
+            resizeMode="contain"
+          />
+          <AppText variant="caption" style={{ color: "#FFFFFF" }}>
+            Welcome back, {firstName}
+          </AppText>
+        </View>
+
+        {/* Settings button */}
         <TouchableOpacity
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onBackPress?.();
-          }}
+          onPress={onSettingsPress}
           style={{
-            flexDirection: "row",
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: theme.colors.surface.level1,
             alignItems: "center",
-            marginBottom: theme.spacing.md,
+            justifyContent: "center",
+            borderWidth: 1,
+            borderColor: theme.colors.border.subtle,
+            marginTop: theme.spacing.sm,
           }}
           activeOpacity={0.7}
         >
-          <ArrowLeft size={20} color={theme.colors.accent.primary} />
-          <AppText
-            variant="body"
-            style={{ color: theme.colors.accent.primary, marginLeft: theme.spacing.xs }}
-          >
-            {backLabel}
-          </AppText>
+          <Settings size={18} color={theme.colors.text.secondary} />
         </TouchableOpacity>
-      ) : (
-        <AppText
-          variant="caption"
-          color="secondary"
-          style={{ marginBottom: theme.spacing.xs }}
-        >
-          Welcome back, {firstName}
-        </AppText>
-      )}
-
-      {/* Title */}
-      <AppText
-        variant="display"
-        color="primary"
-        style={{ marginBottom: theme.spacing.lg }}
-      >
-        {title}
-      </AppText>
+      </View>
 
       {/* Search Bar */}
       <View
@@ -92,7 +93,7 @@ export function Header({
         <TextInput
           value={searchQuery}
           onChangeText={onSearchChange}
-          placeholder={`Search ${title.toLowerCase()}...`}
+          placeholder="Search everything..."
           placeholderTextColor={theme.colors.text.muted}
           returnKeyType="search"
           onSubmitEditing={Keyboard.dismiss}
@@ -104,7 +105,7 @@ export function Header({
             color: theme.colors.text.primary,
           }}
         />
-        {searchQuery?.length > 0 && (
+        {searchQuery.length > 0 && (
           <TouchableOpacity onPress={handleClearSearch} activeOpacity={0.7}>
             <X size={18} color={theme.colors.text.muted} strokeWidth={2} />
           </TouchableOpacity>

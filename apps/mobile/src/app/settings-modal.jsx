@@ -5,10 +5,10 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
-  Linking,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
 import {
   Moon,
   Sun,
@@ -19,6 +19,7 @@ import {
   ChevronRight,
   Sparkles,
   LogOut,
+  X,
 } from "lucide-react-native";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useFirebaseAuth } from "@/contexts/AuthContext";
@@ -28,7 +29,7 @@ import { toast } from "sonner-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEY } from "@/hooks/useCreateIdea";
 
-export default function SettingsScreen() {
+export default function SettingsModal() {
   const insets = useSafeAreaInsets();
   const { theme, isDark, toggleTheme } = useTheme();
   const { signOut, user } = useFirebaseAuth();
@@ -36,6 +37,11 @@ export default function SettingsScreen() {
   const handleToggleTheme = () => {
     try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (e) {}
     toggleTheme();
+  };
+
+  const handleClose = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.back();
   };
 
   const handleSignOut = () => {
@@ -53,6 +59,7 @@ export default function SettingsScreen() {
               toast.error(error);
             } else {
               toast.success("Signed out successfully");
+              router.replace("/auth");
             }
           },
         },
@@ -136,14 +143,14 @@ export default function SettingsScreen() {
           title: "Help & FAQ",
           subtitle: "Get help and find answers",
           type: "navigation",
-          onPress: () => Linking.openURL("https://spillstack.com/#contact"),
+          onPress: () => router.push("/faq"),
         },
         {
           icon: Shield,
           title: "Privacy Policy",
           subtitle: "Learn how we protect your data",
           type: "navigation",
-          onPress: () => Linking.openURL("https://spillstack.com/privacy"),
+          onPress: () => router.push("/privacy-policy"),
         },
       ],
     },
@@ -230,24 +237,43 @@ export default function SettingsScreen() {
     <AppScreen>
       <StatusBar style={isDark ? "light" : "dark"} />
 
-      {/* Header */}
+      {/* Header with Close Button */}
       <View
         style={{
           paddingTop: insets.top + theme.spacing.lg,
           paddingBottom: theme.spacing.lg,
           paddingHorizontal: theme.spacing.xl,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
         }}
       >
         <AppText variant="display" color="primary">
           Settings
         </AppText>
+        <TouchableOpacity
+          onPress={handleClose}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: theme.colors.surface.level1,
+            alignItems: "center",
+            justifyContent: "center",
+            borderWidth: 1,
+            borderColor: theme.colors.border.subtle,
+          }}
+          activeOpacity={0.7}
+        >
+          <X size={18} color={theme.colors.text.secondary} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
           padding: theme.spacing.xl,
-          paddingBottom: insets.bottom + 100,
+          paddingBottom: insets.bottom + 40,
         }}
         showsVerticalScrollIndicator={false}
       >

@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Lightbulb, CheckCircle, Settings } from "lucide-react-native";
+import { Home, Library } from "lucide-react-native";
 import { useTheme } from "@/contexts/ThemeContext";
 import { BlurView } from "expo-blur";
 
@@ -12,12 +12,14 @@ export default function TabLayout() {
         headerShown: false,
         tabBarStyle: {
           position: "absolute",
-          backgroundColor: isDark ? "rgba(10, 10, 11, 0.9)" : "rgba(255, 255, 255, 0.9)",
+          backgroundColor: isDark
+            ? "rgba(5, 8, 17, 0.92)"
+            : "rgba(248, 250, 252, 0.92)",
           borderTopWidth: 1,
-          borderTopColor: theme.colors.border,
-          paddingTop: 8,
+          borderTopColor: theme.colors.border.subtle,
+          paddingTop: theme.spacing.sm,
           paddingBottom: 28,
-          height: 84,
+          height: theme.componentHeight.tabBar,
         },
         tabBarBackground: () => (
           <BlurView
@@ -32,61 +34,55 @@ export default function TabLayout() {
             }}
           />
         ),
-        tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: theme.colors.textTertiary,
+        tabBarActiveTintColor: theme.colors.accent.primary,
+        tabBarInactiveTintColor: theme.colors.text.muted,
         tabBarLabelStyle: {
-          fontSize: 11,
+          ...theme.typography.caption,
           fontWeight: "600",
-          marginTop: 4,
+          marginTop: theme.spacing.xs,
         },
         tabBarIconStyle: {
-          marginTop: 4,
+          marginTop: theme.spacing.xs,
         },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Ideas",
+          title: "Home",
           tabBarIcon: ({ color, focused }) => (
-            <Lightbulb
+            <Home
               color={color}
-              size={24}
+              size={22}
               strokeWidth={focused ? 2.5 : 2}
             />
           ),
         }}
       />
+      <Tabs.Screen
+        name="library"
+        options={{
+          title: "Library",
+          tabBarIcon: ({ color, focused }) => (
+            <Library
+              color={color}
+              size={22}
+              strokeWidth={focused ? 2.5 : 2}
+            />
+          ),
+        }}
+      />
+      {/* Hide old tabs - keeping files for backward compatibility but not shown in tab bar */}
       <Tabs.Screen
         name="tasks"
         options={{
-          title: "Tasks",
-          tabBarIcon: ({ color, focused }) => (
-            <CheckCircle
-              color={color}
-              size={24}
-              strokeWidth={focused ? 2.5 : 2}
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="idea/[id]"
-        options={{
-          href: null,
+          href: null, // This hides the tab from the tab bar
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          title: "Settings",
-          tabBarIcon: ({ color, focused }) => (
-            <Settings
-              color={color}
-              size={24}
-              strokeWidth={focused ? 2.5 : 2}
-            />
-          ),
+          href: null, // This hides the tab from the tab bar
         }}
       />
     </Tabs>

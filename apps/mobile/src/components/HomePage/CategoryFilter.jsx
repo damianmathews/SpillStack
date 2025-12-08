@@ -1,18 +1,8 @@
 import React from "react";
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
-import { useTheme } from "@/contexts/ThemeContext";
+import { View, TouchableOpacity, ScrollView } from "react-native";
+import { useTheme, categoryColors } from "@/contexts/ThemeContext";
+import { AppText } from "@/components/primitives";
 import * as Haptics from "expo-haptics";
-
-const categoryColors = {
-  All: "#E91E63",
-  Ideas: "#9C27B0",
-  Learning: "#3F51B5",
-  Projects: "#009688",
-  Research: "#FF5722",
-  Personal: "#E91E63",
-  "Business Ideas": "#673AB7",
-  "To Do": "#00BCD4",
-};
 
 export function CategoryFilter({
   categories = [],
@@ -32,18 +22,17 @@ export function CategoryFilter({
   };
 
   return (
-    <View style={{ paddingVertical: 12 }}>
+    <View style={{ paddingVertical: theme.spacing.md }}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{
-          paddingHorizontal: 20,
-          gap: 8,
+          paddingHorizontal: theme.spacing.xl,
+          gap: theme.spacing.sm,
         }}
       >
         {allCategories.map((category) => {
           const isSelected = selectedCategory === category.name;
-          const color = categoryColors[category.name] || theme.colors.primary;
 
           return (
             <TouchableOpacity
@@ -51,23 +40,32 @@ export function CategoryFilter({
               onPress={() => handleSelect(category.name)}
               activeOpacity={0.7}
               style={{
-                paddingHorizontal: 16,
-                paddingVertical: 8,
-                borderRadius: 20,
-                backgroundColor: isSelected ? color : theme.colors.surface,
+                paddingHorizontal: theme.spacing.lg,
+                height: theme.componentHeight.chip,
+                justifyContent: "center",
+                alignItems: "center",
+                borderRadius: theme.radius.pill,
+                backgroundColor: isSelected
+                  ? theme.colors.accent.softBg
+                  : theme.colors.surface.level1,
                 borderWidth: 1,
-                borderColor: isSelected ? color : theme.colors.border,
+                borderColor: isSelected
+                  ? theme.colors.accent.softBorder
+                  : theme.colors.border.subtle,
               }}
             >
-              <Text
+              <AppText
+                variant="subtitle"
                 style={{
-                  color: isSelected ? "#FFFFFF" : theme.colors.textSecondary,
-                  fontSize: 13,
-                  fontWeight: "600",
+                  color: isSelected
+                    ? theme.colors.text.primary
+                    : theme.colors.text.secondary,
+                  letterSpacing: 0,
+                  textTransform: "none",
                 }}
               >
                 {category.name}
-              </Text>
+              </AppText>
             </TouchableOpacity>
           );
         })}

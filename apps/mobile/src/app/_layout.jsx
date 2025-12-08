@@ -52,6 +52,39 @@ function RootLayoutNav() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="auth" />
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen
+          name="idea/[id]"
+          options={{
+            presentation: "card",
+            gestureEnabled: true,
+            gestureDirection: "horizontal",
+            animation: "slide_from_right",
+          }}
+        />
+        <Stack.Screen
+          name="settings-modal"
+          options={{
+            presentation: "modal",
+            gestureEnabled: true,
+            animation: "slide_from_bottom",
+          }}
+        />
+        <Stack.Screen
+          name="privacy-policy"
+          options={{
+            presentation: "card",
+            gestureEnabled: true,
+            animation: "slide_from_right",
+          }}
+        />
+        <Stack.Screen
+          name="faq"
+          options={{
+            presentation: "card",
+            gestureEnabled: true,
+            animation: "slide_from_right",
+          }}
+        />
       </Stack>
     </GestureHandlerRootView>
   );
