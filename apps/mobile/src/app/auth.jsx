@@ -141,12 +141,13 @@ export default function AuthScreen() {
               style={[
                 styles.googleButton,
                 {
-                  backgroundColor: isDark ? "#fff" : "#fff",
+                  backgroundColor: "#fff",
                   borderColor: theme.colors.border,
                 },
               ]}
               onPress={handleGoogleSignIn}
               disabled={googleLoading}
+              activeOpacity={0.7}
             >
               {googleLoading ? (
                 <ActivityIndicator color="#000" />

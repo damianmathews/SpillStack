@@ -16,7 +16,14 @@
         "NSCalendarsUsageDescription": "SpillStack can help you schedule ideas on your calendar",
         "NSCalendarsFullAccessUsageDescription": "SpillStack can help you schedule ideas on your calendar",
         "NSContactsUsageDescription": "SpillStack may use contacts to help you share ideas with others",
-        "NSCameraUsageDescription": "SpillStack may use the camera to capture photos for your ideas"
+        "NSCameraUsageDescription": "SpillStack may use the camera to capture photos for your ideas",
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.732563511222-fj1fqguutuk88a8nb7ebasnj7pir5ldt"
+            ]
+          }
+        ]
       }
     },
     "android": {
