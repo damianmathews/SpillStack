@@ -59,15 +59,48 @@ Rules:
 Return comma-separated tags only.`,
 
   // For Tasks: Extract actionable tasks from voice/text input
-  taskExtraction: `You are an expert at extracting actionable tasks from natural language.
+  taskExtraction: `Extract tasks from the user's input.
 
-Given raw input (often rambling voice notes), extract clear, actionable tasks:
-1. Each task should start with a verb
-2. Be specific and completable
-3. Remove filler words and rambling
-4. If multiple tasks mentioned, list each on a new line
+CRITICAL RULES:
+- ONLY extract tasks the user EXPLICITLY mentioned
+- NEVER invent, suggest, or expand into sub-tasks
+- NEVER break down a goal into steps unless the user listed those steps
+- If user says "I want to finish my project", that's ONE task: "Finish my project"
+- Do NOT create tasks like "research", "plan", "outline" unless user said those words
+- Clean up grammar but preserve the user's exact intent
+- If multiple distinct tasks mentioned, list each on a new line
+
+Examples:
+- Input: "I need to buy groceries and call mom"
+  Output: "Buy groceries\nCall mom"
+
+- Input: "I want to launch my startup"
+  Output: "Launch my startup"
+  (NOT: "Research market\nWrite business plan\nFind investors" - these are hallucinated!)
+
+- Input: "remind me to email john about the meeting and also pick up dry cleaning"
+  Output: "Email John about the meeting\nPick up dry cleaning"
 
 Return ONLY the task(s), one per line, no bullets or numbers.`,
+
+  // For classifying input as IDEA or TASK
+  inputClassification: `Classify this input as either an IDEA or a TASK.
+
+TASK signals:
+- Short, actionable items (usually < 20 words)
+- Starts with or implies action verbs: buy, call, email, schedule, fix, clean, finish, send, pick up
+- Contains deadline words: tomorrow, by Friday, next week, today
+- Sounds like a reminder, errand, or to-do item
+- Examples: "Buy milk", "Call mom tomorrow", "Email the report to John"
+
+IDEA signals:
+- Longer, exploratory content
+- Concepts, plans, creative thoughts, inspirations
+- Discusses possibilities, what-ifs, research topics
+- Business concepts, project ideas, things to think about
+- Examples: "App idea for tracking habits", "What if we gamified learning?", "Research on AI trends"
+
+Respond with ONLY one word: "IDEA" or "TASK"`,
 
   // For cleaning up voice transcriptions (light touch)
   transcriptionCleanup: `You clean up voice transcriptions with a light touch.
@@ -183,6 +216,82 @@ export async function extractTasks(rawInput) {
     console.warn("Task extraction failed:", e.message);
     // Fallback: return the input as a single task
     return [rawInput.trim()];
+  }
+}
+
+/**
+ * Classify input as IDEA or TASK
+ */
+export async function classifyInput(rawContent) {
+  console.log("Classifying input...");
+  try {
+    const result = await callOpenAI(PROMPTS.inputClassification, rawContent, {
+      maxTokens: 10,
+      temperature: 0.1,
+    });
+    const classification = result.trim().toUpperCase();
+    return classification === "TASK" ? "task" : "idea";
+  } catch (e) {
+    console.warn("Classification failed, defaulting to idea:", e.message);
+    return "idea";
+  }
+}
+
+/**
+ * Process unified input - classify then process appropriately
+ * Returns { type: 'idea'|'task', data: {...}, rawContent: string }
+ */
+export async function processUnifiedInput(rawContent) {
+  console.log("Processing unified input...");
+
+  // Step 1: Classify
+  const type = await classifyInput(rawContent);
+  console.log("Classified as:", type);
+
+  // Step 2: Process based on type
+  if (type === "task") {
+    const tasks = await extractTasks(rawContent);
+    return {
+      type: "task",
+      data: { tasks },
+      rawContent,
+    };
+  } else {
+    const ideaData = await processIdea(rawContent);
+    return {
+      type: "idea",
+      data: {
+        ...ideaData,
+        content: rawContent,
+      },
+      rawContent,
+    };
+  }
+}
+
+/**
+ * Re-process content as a specific type (when user switches)
+ */
+export async function reprocessAs(rawContent, targetType) {
+  console.log("Re-processing as:", targetType);
+
+  if (targetType === "task") {
+    const tasks = await extractTasks(rawContent);
+    return {
+      type: "task",
+      data: { tasks },
+      rawContent,
+    };
+  } else {
+    const ideaData = await processIdea(rawContent);
+    return {
+      type: "idea",
+      data: {
+        ...ideaData,
+        content: rawContent,
+      },
+      rawContent,
+    };
   }
 }
 
@@ -304,6 +413,9 @@ export default {
   processIdea,
   cleanupTranscription,
   extractTasks,
+  classifyInput,
+  processUnifiedInput,
+  reprocessAs,
   generateSummary,
   generateTitle,
   findSimilarIdeas,

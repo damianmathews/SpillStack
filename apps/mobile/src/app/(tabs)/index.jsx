@@ -17,7 +17,6 @@ import {
   Sparkles,
   ChevronRight,
   Check,
-  Plus,
 } from "lucide-react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
@@ -34,11 +33,8 @@ import { useFirebaseAuth } from "@/contexts/AuthContext";
 import { useIdeas } from "@/hooks/useIdeas";
 import { useCategories } from "@/hooks/useCategories";
 import { getStoredIdeas } from "@/hooks/useCreateIdea";
-import { VoiceModal } from "@/components/Modals/VoiceModal";
-import { TextModal } from "@/components/Modals/TextModal";
+import { UnifiedInputModal } from "@/components/Modals/UnifiedInputModal";
 import { LinkModal } from "@/components/Modals/LinkModal";
-import { TaskVoiceModal } from "@/components/Modals/TaskVoiceModal";
-import { TaskTextModal } from "@/components/Modals/TaskTextModal";
 import { AppScreen, AppText } from "@/components/primitives";
 import { sampleIdeas, sampleTasks, categories as defaultCategories } from "@/data/sampleData";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -173,7 +169,7 @@ export default function HomePage() {
   const queryClient = useQueryClient();
   const { theme, isDark } = useTheme();
   const { user } = useFirebaseAuth();
-  const { tag: tagParam } = useLocalSearchParams();
+  const { tag: tagParam, category: categoryParam, openIdeasSheet: openIdeasSheetParam } = useLocalSearchParams();
 
   // State
   const [searchQuery, setSearchQuery] = useState("");
@@ -188,18 +184,30 @@ export default function HomePage() {
     }
   }, [tagParam]);
 
-  // Ideas Modal states
+  // Set category from navigation params
+  useEffect(() => {
+    if (categoryParam) {
+      setSelectedCategory(categoryParam);
+    }
+  }, [categoryParam]);
+
+  // Open Ideas sheet with specific category from navigation params
+  useEffect(() => {
+    if (openIdeasSheetParam) {
+      setIdeasSheetCategory(openIdeasSheetParam);
+      setShowIdeasSheet(true);
+    }
+  }, [openIdeasSheetParam]);
+
+  // Unified Modal states
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [showTextModal, setShowTextModal] = useState(false);
   const [showLinkModal, setShowLinkModal] = useState(false);
 
-  // Task Modal states
-  const [showTaskVoiceModal, setShowTaskVoiceModal] = useState(false);
-  const [showTaskTextModal, setShowTaskTextModal] = useState(false);
-
   // Sheet states
   const [showIdeasSheet, setShowIdeasSheet] = useState(false);
   const [showTasksSheet, setShowTasksSheet] = useState(false);
+  const [ideasSheetCategory, setIdeasSheetCategory] = useState("All");
 
   // Track tasks being removed
   const [removingTasks, setRemovingTasks] = useState(new Set());
@@ -229,7 +237,26 @@ export default function HomePage() {
   const allIdeas = [...localIdeas, ...sampleIdeas];
   const ideas = apiIdeas.length > 0 ? apiIdeas : allIdeas;
   const tasks = localTasks;
-  const categories = apiCategories.length > 0 ? apiCategories : defaultCategories;
+  const baseCategories = apiCategories.length > 0 ? apiCategories : defaultCategories;
+
+  // Sort categories by idea count (most popular first)
+  const categories = React.useMemo(() => {
+    // Count ideas per category
+    const categoryCounts = {};
+    ideas.forEach((idea) => {
+      const cat = idea.category || "Uncategorized";
+      categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+    });
+
+    // Sort categories by count (descending), keeping "All" always first
+    return [...baseCategories].sort((a, b) => {
+      if (a.name === "All") return -1;
+      if (b.name === "All") return 1;
+      const countA = categoryCounts[a.name] || 0;
+      const countB = categoryCounts[b.name] || 0;
+      return countB - countA;
+    });
+  }, [baseCategories, ideas]);
 
   // Filter ideas by search, tag, and category
   const filteredIdeas = ideas.filter((idea) => {
@@ -307,19 +334,6 @@ export default function HomePage() {
   const handleIdeaPress = (idea) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push(`/idea/${idea.id}`);
-  };
-
-  // Handle tasks created from modals
-  const handleTasksCreated = async (newTasks) => {
-    try {
-      const stored = await AsyncStorage.getItem(TASKS_STORAGE_KEY);
-      const currentTasks = stored ? JSON.parse(stored) : sampleTasks;
-      const updatedTasks = [...newTasks, ...currentTasks];
-      await AsyncStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(updatedTasks));
-      queryClient.invalidateQueries({ queryKey: ["localTasks"] });
-    } catch (error) {
-      console.error("Error saving tasks:", error);
-    }
   };
 
   const formatDate = (dateString) => {
@@ -438,38 +452,6 @@ export default function HomePage() {
     );
   };
 
-  // Add Task Button
-  const AddTaskButton = () => (
-    <TouchableOpacity
-      onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        setShowTaskTextModal(true);
-      }}
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        paddingVertical: theme.spacing.md,
-        paddingHorizontal: theme.spacing.lg,
-        backgroundColor: theme.colors.surface.level1,
-        borderRadius: theme.radius.lg,
-        borderWidth: 1,
-        borderColor: theme.colors.border.subtle,
-        borderStyle: "dashed",
-        marginTop: theme.spacing.sm,
-      }}
-      activeOpacity={0.7}
-    >
-      <Plus size={16} color={theme.colors.accent.primary} strokeWidth={2} />
-      <AppText
-        variant="body"
-        style={{ color: theme.colors.accent.primary, marginLeft: theme.spacing.sm }}
-      >
-        Add task
-      </AppText>
-    </TouchableOpacity>
-  );
-
   // Empty State
   const EmptyState = () => (
     <View
@@ -550,6 +532,7 @@ export default function HomePage() {
               icon={Sparkles}
               onSeeAll={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setIdeasSheetCategory("All");
                 setShowIdeasSheet(true);
               }}
               isFirst
@@ -611,9 +594,6 @@ export default function HomePage() {
                       {isSearching ? "No tasks match your search" : "No pending tasks"}
                     </AppText>
                   )}
-
-                  {/* Add Task Button */}
-                  <AddTaskButton />
                 </View>
               </>
             )}
@@ -621,25 +601,13 @@ export default function HomePage() {
         )}
       </ScrollView>
 
-      {/* Ideas Modals */}
-      <VoiceModal visible={showVoiceModal} onClose={() => setShowVoiceModal(false)} />
-      <TextModal visible={showTextModal} onClose={() => setShowTextModal(false)} />
+      {/* Unified Input Modals - AI detects Idea vs Task */}
+      <UnifiedInputModal visible={showVoiceModal} mode="voice" onClose={() => setShowVoiceModal(false)} />
+      <UnifiedInputModal visible={showTextModal} mode="text" onClose={() => setShowTextModal(false)} />
       <LinkModal visible={showLinkModal} onClose={() => setShowLinkModal(false)} />
 
-      {/* Task Modals */}
-      <TaskVoiceModal
-        visible={showTaskVoiceModal}
-        onClose={() => setShowTaskVoiceModal(false)}
-        onTasksCreated={handleTasksCreated}
-      />
-      <TaskTextModal
-        visible={showTaskTextModal}
-        onClose={() => setShowTaskTextModal(false)}
-        onTasksCreated={handleTasksCreated}
-      />
-
       {/* Full View Sheets */}
-      <IdeasSheet visible={showIdeasSheet} onClose={() => setShowIdeasSheet(false)} />
+      <IdeasSheet visible={showIdeasSheet} onClose={() => setShowIdeasSheet(false)} initialCategory={ideasSheetCategory} />
       <TasksSheet visible={showTasksSheet} onClose={() => setShowTasksSheet(false)} />
     </AppScreen>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { View, TextInput, Keyboard, TouchableOpacity, Image } from "react-native";
+import { View, TextInput, Keyboard, TouchableOpacity } from "react-native";
 import { Search, X, Settings } from "lucide-react-native";
 import { router } from "expo-router";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -7,7 +7,7 @@ import { AppText } from "@/components/primitives";
 import * as Haptics from "expo-haptics";
 
 export function HomeHeader({ insets, searchQuery, onSearchChange, activeTag, onClearTag }) {
-  const { theme, isDark } = useTheme();
+  const { theme } = useTheme();
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const searchInputRef = useRef(null);
 
@@ -29,7 +29,7 @@ export function HomeHeader({ insets, searchQuery, onSearchChange, activeTag, onC
         paddingHorizontal: theme.spacing.xl,
       }}
     >
-      {/* Single row: Logo | Search | Settings */}
+      {/* Single row: Search | Settings */}
       <View
         style={{
           flexDirection: "row",
@@ -37,21 +37,7 @@ export function HomeHeader({ insets, searchQuery, onSearchChange, activeTag, onC
           gap: theme.spacing.md,
         }}
       >
-        {/* Logo - compact */}
-        <Image
-          source={
-            isDark
-              ? require("../../../assets/spillstack-logo-white.png")
-              : require("../../../assets/spillstack-logo-black.png")
-          }
-          style={{
-            width: 140,
-            height: 35,
-          }}
-          resizeMode="contain"
-        />
-
-        {/* Search Bar - flexible width */}
+        {/* Search Bar - full width */}
         <View
           style={{
             flex: 1,
@@ -60,14 +46,14 @@ export function HomeHeader({ insets, searchQuery, onSearchChange, activeTag, onC
             backgroundColor: theme.colors.surface.level1,
             borderRadius: theme.radius.lg,
             paddingHorizontal: theme.spacing.md,
-            height: 40,
+            height: 44,
             borderWidth: 1,
             borderColor: isSearchFocused
               ? theme.colors.accent.primary
               : theme.colors.border.subtle,
           }}
         >
-          <Search size={16} color={theme.colors.text.muted} strokeWidth={2} />
+          <Search size={18} color={theme.colors.text.muted} strokeWidth={2} />
 
           {/* Active Tag Chip */}
           {activeTag && (
@@ -83,7 +69,7 @@ export function HomeHeader({ insets, searchQuery, onSearchChange, activeTag, onC
                 paddingHorizontal: theme.spacing.sm,
                 paddingVertical: 2,
                 borderRadius: theme.radius.pill,
-                marginLeft: theme.spacing.xs,
+                marginLeft: theme.spacing.sm,
                 gap: 4,
               }}
               activeOpacity={0.7}
@@ -99,7 +85,7 @@ export function HomeHeader({ insets, searchQuery, onSearchChange, activeTag, onC
             ref={searchInputRef}
             value={searchQuery}
             onChangeText={onSearchChange}
-            placeholder={activeTag ? "Filter..." : "Search..."}
+            placeholder={activeTag ? "Filter..." : "Search ideas and tasks..."}
             placeholderTextColor={theme.colors.text.muted}
             returnKeyType="search"
             onSubmitEditing={Keyboard.dismiss}
@@ -109,13 +95,13 @@ export function HomeHeader({ insets, searchQuery, onSearchChange, activeTag, onC
             style={{
               flex: 1,
               marginLeft: theme.spacing.sm,
-              fontSize: 14,
+              fontSize: 15,
               color: theme.colors.text.primary,
             }}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={handleClearSearch} activeOpacity={0.7}>
-              <X size={16} color={theme.colors.text.muted} strokeWidth={2} />
+              <X size={18} color={theme.colors.text.muted} strokeWidth={2} />
             </TouchableOpacity>
           )}
         </View>
@@ -124,9 +110,9 @@ export function HomeHeader({ insets, searchQuery, onSearchChange, activeTag, onC
         <TouchableOpacity
           onPress={handleSettingsPress}
           style={{
-            width: 40,
-            height: 40,
-            borderRadius: 20,
+            width: 44,
+            height: 44,
+            borderRadius: 22,
             backgroundColor: theme.colors.surface.level1,
             alignItems: "center",
             justifyContent: "center",
@@ -135,7 +121,7 @@ export function HomeHeader({ insets, searchQuery, onSearchChange, activeTag, onC
           }}
           activeOpacity={0.7}
         >
-          <Settings size={18} color={theme.colors.text.secondary} />
+          <Settings size={20} color={theme.colors.text.secondary} />
         </TouchableOpacity>
       </View>
     </View>

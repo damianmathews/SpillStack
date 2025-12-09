@@ -217,10 +217,10 @@ export default function IdeaDetailScreen() {
     return categoryColors[categoryName] || theme.colors.accent.primary;
   };
 
-  // Navigate to category filter
+  // Navigate to home and open Ideas sheet with category filter
   const handleCategoryPress = (categoryName) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push(`/(tabs)/library/ideas?category=${encodeURIComponent(categoryName)}`);
+    router.push({ pathname: "/(tabs)", params: { openIdeasSheet: categoryName } });
   };
 
   // Get similar idea objects

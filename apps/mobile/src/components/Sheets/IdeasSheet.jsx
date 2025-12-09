@@ -22,14 +22,21 @@ import { IdeaCard } from "@/components/HomePage/IdeaCard";
 import { AppText } from "@/components/primitives";
 import { sampleIdeas, categories as defaultCategories } from "@/data/sampleData";
 
-export function IdeasSheet({ visible, onClose }) {
+export function IdeasSheet({ visible, onClose, initialCategory = "All" }) {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const { theme, isDark } = useTheme();
 
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [searchQuery, setSearchQuery] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+
+  // Update category when initialCategory changes (e.g., opening from idea detail)
+  React.useEffect(() => {
+    if (visible && initialCategory) {
+      setSelectedCategory(initialCategory);
+    }
+  }, [visible, initialCategory]);
 
   // Fetch ideas and categories
   const { data: apiIdeas = [], isLoading } = useIdeas(selectedCategory, searchQuery);
@@ -44,7 +51,26 @@ export function IdeasSheet({ visible, onClose }) {
   // Combine local ideas + sample ideas
   const allIdeas = [...localIdeas, ...sampleIdeas];
   const ideas = apiIdeas.length > 0 ? apiIdeas : allIdeas;
-  const categories = apiCategories.length > 0 ? apiCategories : defaultCategories;
+  const baseCategories = apiCategories.length > 0 ? apiCategories : defaultCategories;
+
+  // Sort categories by idea count (most popular first)
+  const categories = useMemo(() => {
+    // Count ideas per category
+    const categoryCounts = {};
+    ideas.forEach((idea) => {
+      const cat = idea.category || "Uncategorized";
+      categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+    });
+
+    // Sort categories by count (descending), keeping "All" always first
+    return [...baseCategories].sort((a, b) => {
+      if (a.name === "All") return -1;
+      if (b.name === "All") return 1;
+      const countA = categoryCounts[a.name] || 0;
+      const countB = categoryCounts[b.name] || 0;
+      return countB - countA;
+    });
+  }, [baseCategories, ideas]);
 
   // Filter ideas
   const filteredIdeas = useMemo(() => {
@@ -208,6 +234,7 @@ export function IdeasSheet({ visible, onClose }) {
           categories={categories}
           selectedCategory={selectedCategory}
           onCategorySelect={setSelectedCategory}
+          scrollToSelected={visible && initialCategory !== "All"}
         />
 
         {/* Ideas Grid */}

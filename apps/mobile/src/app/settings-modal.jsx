@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
+  Image,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -17,7 +18,6 @@ import {
   Shield,
   HelpCircle,
   ChevronRight,
-  Sparkles,
   LogOut,
   X,
 } from "lucide-react-native";
@@ -237,23 +237,21 @@ export default function SettingsModal() {
     <AppScreen>
       <StatusBar style={isDark ? "light" : "dark"} />
 
-      {/* Header with Close Button */}
+      {/* Header with Logo and Close Button */}
       <View
         style={{
-          paddingTop: insets.top + theme.spacing.lg,
-          paddingBottom: theme.spacing.lg,
+          paddingTop: insets.top - 8,
+          paddingBottom: 4,
           paddingHorizontal: theme.spacing.xl,
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
         }}
       >
-        <AppText variant="display" color="primary">
-          Settings
-        </AppText>
+        {/* Close button - positioned absolute top right */}
         <TouchableOpacity
           onPress={handleClose}
           style={{
+            position: "absolute",
+            top: insets.top - 8,
+            right: theme.spacing.xl,
             width: 36,
             height: 36,
             borderRadius: 18,
@@ -262,11 +260,32 @@ export default function SettingsModal() {
             justifyContent: "center",
             borderWidth: 1,
             borderColor: theme.colors.border.subtle,
+            zIndex: 10,
           }}
           activeOpacity={0.7}
         >
           <X size={18} color={theme.colors.text.secondary} />
         </TouchableOpacity>
+
+        {/* Big Logo centered - 2x size (440x110) */}
+        <View style={{ alignItems: "center", marginBottom: -38 }}>
+          <Image
+            source={
+              isDark
+                ? require("../../assets/spillstack-logo-white.png")
+                : require("../../assets/spillstack-logo-black.png")
+            }
+            style={{
+              width: 440,
+              height: 110,
+            }}
+            resizeMode="contain"
+          />
+        </View>
+
+        <AppText variant="body" color="primary" style={{ textAlign: "center", fontSize: 16 }}>
+          Settings
+        </AppText>
       </View>
 
       <ScrollView
@@ -297,7 +316,7 @@ export default function SettingsModal() {
           </View>
         ))}
 
-        {/* App Info */}
+        {/* Version Info */}
         <View
           style={{
             alignItems: "center",
@@ -307,19 +326,6 @@ export default function SettingsModal() {
             borderTopColor: theme.colors.border.subtle,
           }}
         >
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: theme.spacing.sm,
-              marginBottom: theme.spacing.sm,
-            }}
-          >
-            <Sparkles size={16} color={theme.colors.accent.primary} />
-            <AppText variant="title" color="primary">
-              SpillStack
-            </AppText>
-          </View>
           <AppText variant="caption" color="muted">
             Version 1.1
           </AppText>
