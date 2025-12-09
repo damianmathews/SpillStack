@@ -1,36 +1,26 @@
 import React, { useState, useCallback } from "react";
 import {
   View,
-  FlatList,
+  Modal,
   TouchableOpacity,
+  FlatList,
   RefreshControl,
   Alert,
+  TextInput,
+  Keyboard,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { StatusBar } from "expo-status-bar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
-import { router, useLocalSearchParams } from "expo-router";
-import {
-  Circle,
-  Check,
-  Trash2,
-  ListTodo,
-  ArrowLeft,
-} from "lucide-react-native";
+import { X, Search, Circle, Check, Trash2, ListTodo } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 
 import { useTheme } from "@/contexts/ThemeContext";
-import { Header } from "@/components/HomePage/Header";
-import { FloatingActionButton } from "@/components/FAB/FloatingActionButton";
-import { TaskVoiceModal } from "@/components/Modals/TaskVoiceModal";
-import { TaskTextModal } from "@/components/Modals/TaskTextModal";
-import { AppScreen, AppText } from "@/components/primitives";
+import { AppText } from "@/components/primitives";
 import { sampleTasks } from "@/data/sampleData";
 
 const TASKS_STORAGE_KEY = "@spillstack_tasks";
 
-// Save tasks to storage
 const saveTasks = async (newTasks) => {
   try {
     await AsyncStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(newTasks));
@@ -39,21 +29,15 @@ const saveTasks = async (newTasks) => {
   }
 };
 
-export default function LibraryTasksPage() {
+export function TasksSheet({ visible, onClose }) {
   const insets = useSafeAreaInsets();
-  const { theme, isDark } = useTheme();
+  const { theme } = useTheme();
   const queryClient = useQueryClient();
-  const params = useLocalSearchParams();
-  const cameFromHome = params.from === "home";
 
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Modal states
-  const [showVoiceModal, setShowVoiceModal] = useState(false);
-  const [showTextModal, setShowTextModal] = useState(false);
-
-  // Use React Query for tasks - same key as home page for sync
+  // Fetch tasks
   const { data: tasks = [] } = useQuery({
     queryKey: ["localTasks"],
     queryFn: async () => {
@@ -65,13 +49,6 @@ export default function LibraryTasksPage() {
       }
     },
   });
-
-  // Handle tasks created from modals
-  const handleTasksCreated = async (newTasks) => {
-    const updatedTasks = [...newTasks, ...tasks];
-    await saveTasks(updatedTasks);
-    queryClient.invalidateQueries({ queryKey: ["localTasks"] });
-  };
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -104,6 +81,12 @@ export default function LibraryTasksPage() {
     ]);
   };
 
+  const handleClose = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSearchQuery("");
+    onClose();
+  };
+
   // Filter tasks
   const filteredTasks = tasks.filter((task) => {
     const matchesSearch =
@@ -112,7 +95,6 @@ export default function LibraryTasksPage() {
     return matchesSearch;
   });
 
-  // Separate completed and pending
   const pendingTasks = filteredTasks.filter((t) => !t.completed);
   const completedTasks = filteredTasks.filter((t) => t.completed);
 
@@ -139,6 +121,7 @@ export default function LibraryTasksPage() {
         paddingVertical: theme.spacing.md,
         paddingHorizontal: theme.spacing.md,
         marginBottom: theme.spacing.sm,
+        marginHorizontal: theme.spacing.xl,
       }}
     >
       <TouchableOpacity
@@ -198,7 +181,7 @@ export default function LibraryTasksPage() {
         flexDirection: "row",
         alignItems: "center",
         paddingVertical: theme.spacing.md,
-        paddingHorizontal: theme.spacing.xs,
+        paddingHorizontal: theme.spacing.xl,
       }}
     >
       <AppText
@@ -251,10 +234,12 @@ export default function LibraryTasksPage() {
         <ListTodo size={36} color={theme.colors.text.muted} />
       </View>
       <AppText variant="title" color="primary" style={{ marginBottom: theme.spacing.sm }}>
-        No tasks yet
+        No tasks found
       </AppText>
       <AppText variant="body" color="secondary" style={{ textAlign: "center" }}>
-        Tap the + button to add a task via voice or text. AI will help you capture it quickly.
+        {searchQuery
+          ? `No tasks match "${searchQuery}"`
+          : "Add tasks using Voice or Text!"}
       </AppText>
     </View>
   );
@@ -265,7 +250,7 @@ export default function LibraryTasksPage() {
     }
 
     return (
-      <View style={{ flex: 1 }}>
+      <>
         {pendingTasks.length > 0 && (
           <>
             <SectionHeader title="To Do" count={pendingTasks.length} />
@@ -283,59 +268,120 @@ export default function LibraryTasksPage() {
             ))}
           </>
         )}
-      </View>
+      </>
     );
   };
 
   return (
-    <AppScreen withGradient>
-      <StatusBar style={isDark ? "light" : "dark"} />
-
-      <Header
-        insets={insets}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        title="To Do"
-        showBackButton
-        onBackPress={() => router.back()}
-        backLabel={cameFromHome ? "Home" : "Library"}
-      />
-
-      <FlatList
-        data={[{ key: "content" }]}
-        renderItem={() => renderContent()}
-        contentContainerStyle={{
-          paddingHorizontal: theme.spacing.xl,
-          paddingBottom: insets.bottom + 100,
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={handleClose}
+    >
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: theme.colors.background.default,
         }}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={theme.colors.accent.primary}
-          />
-        }
-      />
+      >
+        {/* Header */}
+        <View
+          style={{
+            paddingTop: insets.top + theme.spacing.md,
+            paddingBottom: theme.spacing.md,
+            paddingHorizontal: theme.spacing.xl,
+            borderBottomWidth: 1,
+            borderBottomColor: theme.colors.border.subtle,
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: theme.spacing.md,
+            }}
+          >
+            <AppText variant="display" color="primary">
+              All Tasks
+            </AppText>
+            <TouchableOpacity
+              onPress={handleClose}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: theme.colors.surface.level1,
+                alignItems: "center",
+                justifyContent: "center",
+                borderWidth: 1,
+                borderColor: theme.colors.border.subtle,
+              }}
+              activeOpacity={0.7}
+            >
+              <X size={18} color={theme.colors.text.secondary} />
+            </TouchableOpacity>
+          </View>
 
-      {/* Floating Action Button - no Link option for tasks */}
-      <FloatingActionButton
-        onVoice={() => setShowVoiceModal(true)}
-        onText={() => setShowTextModal(true)}
-        onLink={null}
-      />
+          {/* Search Bar */}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: theme.colors.surface.level1,
+              borderRadius: theme.radius.lg,
+              paddingHorizontal: theme.spacing.lg,
+              height: theme.componentHeight.input,
+              borderWidth: 1,
+              borderColor: theme.colors.border.subtle,
+            }}
+          >
+            <Search size={18} color={theme.colors.text.muted} strokeWidth={2} />
+            <TextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search tasks..."
+              placeholderTextColor={theme.colors.text.muted}
+              returnKeyType="search"
+              onSubmitEditing={Keyboard.dismiss}
+              style={{
+                flex: 1,
+                marginLeft: theme.spacing.md,
+                ...theme.typography.body,
+                color: theme.colors.text.primary,
+              }}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setSearchQuery("")}
+                activeOpacity={0.7}
+              >
+                <X size={18} color={theme.colors.text.muted} strokeWidth={2} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
 
-      {/* Task-specific Modals */}
-      <TaskVoiceModal
-        visible={showVoiceModal}
-        onClose={() => setShowVoiceModal(false)}
-        onTasksCreated={handleTasksCreated}
-      />
-      <TaskTextModal
-        visible={showTextModal}
-        onClose={() => setShowTextModal(false)}
-        onTasksCreated={handleTasksCreated}
-      />
-    </AppScreen>
+        {/* Tasks List */}
+        <FlatList
+          data={[{ key: "content" }]}
+          renderItem={() => renderContent()}
+          contentContainerStyle={{
+            paddingBottom: insets.bottom + 20,
+          }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          onScrollBeginDrag={Keyboard.dismiss}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={theme.colors.accent.primary}
+            />
+          }
+        />
+      </View>
+    </Modal>
   );
 }

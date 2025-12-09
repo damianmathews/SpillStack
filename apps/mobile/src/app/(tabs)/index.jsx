@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef, memo } from "react";
 import {
   View,
-  FlatList,
   RefreshControl,
   Keyboard,
   TouchableOpacity,
@@ -18,6 +17,7 @@ import {
   Sparkles,
   ChevronRight,
   Check,
+  Plus,
 } from "lucide-react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
@@ -25,40 +25,39 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withTiming,
-  withDelay,
-  withSequence,
   withSpring,
   runOnJS,
-  Easing,
-  FadeOut,
-  SlideOutLeft,
-  Layout,
 } from "react-native-reanimated";
 
 import { useTheme, categoryColors } from "@/contexts/ThemeContext";
 import { useFirebaseAuth } from "@/contexts/AuthContext";
 import { useIdeas } from "@/hooks/useIdeas";
+import { useCategories } from "@/hooks/useCategories";
 import { getStoredIdeas } from "@/hooks/useCreateIdea";
-import { FloatingActionButton } from "@/components/FAB/FloatingActionButton";
 import { VoiceModal } from "@/components/Modals/VoiceModal";
 import { TextModal } from "@/components/Modals/TextModal";
 import { LinkModal } from "@/components/Modals/LinkModal";
+import { TaskVoiceModal } from "@/components/Modals/TaskVoiceModal";
+import { TaskTextModal } from "@/components/Modals/TaskTextModal";
 import { AppScreen, AppText } from "@/components/primitives";
-import { sampleIdeas, sampleTasks } from "@/data/sampleData";
+import { sampleIdeas, sampleTasks, categories as defaultCategories } from "@/data/sampleData";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { HomeHeader } from "@/components/HomePage/HomeHeader";
+import { QuickInputButtons } from "@/components/QuickInput/QuickInputButtons";
+import { CategoryFilter } from "@/components/HomePage/CategoryFilter";
+import { IdeasSheet } from "@/components/Sheets/IdeasSheet";
+import { TasksSheet } from "@/components/Sheets/TasksSheet";
 
 const TASKS_STORAGE_KEY = "@spillstack_tasks";
 
-// Animated Task Item Component - defined outside main component to prevent remounting
+// Animated Task Item Component
 const AnimatedTaskItem = memo(function AnimatedTaskItem({
   task,
   onToggle,
-  onNavigate,
   formatDate,
   isRemoving,
   onRemoveComplete,
-  theme
+  theme,
 }) {
   const opacity = useSharedValue(1);
   const scale = useSharedValue(1);
@@ -69,10 +68,8 @@ const AnimatedTaskItem = memo(function AnimatedTaskItem({
   useEffect(() => {
     if (isRemoving && !hasStartedRemoving.current) {
       hasStartedRemoving.current = true;
-      // Animate checkmark in with spring
       checkScale.value = withSpring(1, { damping: 12, stiffness: 200 });
 
-      // After 2 seconds, fade out and collapse
       const timer = setTimeout(() => {
         opacity.value = withTiming(0, { duration: 250 });
         scale.value = withTiming(0.95, { duration: 250 });
@@ -139,31 +136,24 @@ const AnimatedTaskItem = memo(function AnimatedTaskItem({
             <Circle size={20} color={theme.colors.text.muted} />
           )}
         </TouchableOpacity>
-        <TouchableOpacity
-          onPress={onNavigate}
-          style={{ flex: 1, flexDirection: "row", alignItems: "center" }}
-          activeOpacity={0.7}
-          disabled={isRemoving}
-        >
-          <View style={{ flex: 1, marginRight: theme.spacing.md }}>
-            <AppText
-              variant="caption"
-              color={isChecked ? "muted" : "primary"}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-              style={{
-                textDecorationLine: isChecked ? "line-through" : "none",
-                opacity: isChecked ? 0.6 : 1,
-                fontSize: 14,
-              }}
-            >
-              {task.title}
-            </AppText>
-          </View>
-          <AppText variant="caption" color="muted" style={{ fontSize: 12, flexShrink: 0 }}>
-            {formatDate(task.created_at)}
+        <View style={{ flex: 1, marginRight: theme.spacing.md }}>
+          <AppText
+            variant="caption"
+            color={isChecked ? "muted" : "primary"}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+            style={{
+              textDecorationLine: isChecked ? "line-through" : "none",
+              opacity: isChecked ? 0.6 : 1,
+              fontSize: 14,
+            }}
+          >
+            {task.title}
           </AppText>
-        </TouchableOpacity>
+        </View>
+        <AppText variant="caption" color="muted" style={{ fontSize: 12, flexShrink: 0 }}>
+          {formatDate(task.created_at)}
+        </AppText>
       </View>
     </Animated.View>
   );
@@ -189,6 +179,7 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [activeTag, setActiveTag] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState("All");
 
   // Set active tag from navigation params
   useEffect(() => {
@@ -197,12 +188,20 @@ export default function HomePage() {
     }
   }, [tagParam]);
 
-  // Modal states
+  // Ideas Modal states
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [showTextModal, setShowTextModal] = useState(false);
   const [showLinkModal, setShowLinkModal] = useState(false);
 
-  // Track tasks being removed (showing checked state before animating out)
+  // Task Modal states
+  const [showTaskVoiceModal, setShowTaskVoiceModal] = useState(false);
+  const [showTaskTextModal, setShowTaskTextModal] = useState(false);
+
+  // Sheet states
+  const [showIdeasSheet, setShowIdeasSheet] = useState(false);
+  const [showTasksSheet, setShowTasksSheet] = useState(false);
+
+  // Track tasks being removed
   const [removingTasks, setRemovingTasks] = useState(new Set());
 
   // Fetch ideas
@@ -211,6 +210,7 @@ export default function HomePage() {
     queryKey: ["localIdeas"],
     queryFn: getStoredIdeas,
   });
+  const { data: apiCategories = [] } = useCategories();
 
   // Fetch tasks
   const { data: localTasks = [] } = useQuery({
@@ -229,14 +229,19 @@ export default function HomePage() {
   const allIdeas = [...localIdeas, ...sampleIdeas];
   const ideas = apiIdeas.length > 0 ? apiIdeas : allIdeas;
   const tasks = localTasks;
+  const categories = apiCategories.length > 0 ? apiCategories : defaultCategories;
 
-  // Filter by search query and active tag (global search across all content)
+  // Filter ideas by search, tag, and category
   const filteredIdeas = ideas.filter((idea) => {
-    // First filter by active tag if present
+    // Filter by active tag
     if (activeTag && !idea.tags?.some((t) => t.toLowerCase() === activeTag.toLowerCase())) {
       return false;
     }
-    // Then filter by search query if present
+    // Filter by category
+    if (selectedCategory !== "All" && idea.category !== selectedCategory) {
+      return false;
+    }
+    // Filter by search query
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -248,43 +253,31 @@ export default function HomePage() {
   });
 
   const filteredTasks = tasks.filter((task) => {
-    // Hide tasks when filtering by tag (tasks don't have tags)
     if (activeTag) return false;
-    // Only show tasks that match search query
     if (!searchQuery) return true;
     return task.title?.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
-  // Get recent items (last 7 days)
-  const recentIdeas = filteredIdeas
-    .filter((idea) => {
-      const created = new Date(idea.created_at);
-      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      return created >= weekAgo;
-    })
-    .slice(0, 4);
+  // Get recent ideas (show more now - up to 6)
+  const recentIdeas = filteredIdeas.slice(0, 6);
 
-  // Get tasks - show incomplete tasks plus any that are currently animating out
+  // Get pending tasks
   const pendingTasks = filteredTasks
     .filter((t) => !t.completed || removingTasks.has(t.id))
-    .slice(0, 10);
+    .slice(0, 7);
 
   const toggleTask = async (taskId) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const task = tasks.find((t) => t.id === taskId);
 
     if (task && !task.completed) {
-      // Task is being completed - add to removing set to show checked state
       setRemovingTasks((prev) => new Set([...prev, taskId]));
-
-      // Save the task as completed immediately
       const newTasks = tasks.map((t) =>
         t.id === taskId ? { ...t, completed: true } : t
       );
       await saveTasks(newTasks);
       queryClient.invalidateQueries({ queryKey: ["localTasks"] });
     } else {
-      // Task is being uncompleted - just toggle normally
       const newTasks = tasks.map((t) =>
         t.id === taskId ? { ...t, completed: !t.completed } : t
       );
@@ -293,7 +286,6 @@ export default function HomePage() {
     }
   };
 
-  // Remove task from removing set (called after animation completes)
   const finishRemovingTask = useCallback((taskId) => {
     setRemovingTasks((prev) => {
       const next = new Set(prev);
@@ -317,6 +309,19 @@ export default function HomePage() {
     router.push(`/idea/${idea.id}`);
   };
 
+  // Handle tasks created from modals
+  const handleTasksCreated = async (newTasks) => {
+    try {
+      const stored = await AsyncStorage.getItem(TASKS_STORAGE_KEY);
+      const currentTasks = stored ? JSON.parse(stored) : sampleTasks;
+      const updatedTasks = [...newTasks, ...currentTasks];
+      await AsyncStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(updatedTasks));
+      queryClient.invalidateQueries({ queryKey: ["localTasks"] });
+    } catch (error) {
+      console.error("Error saving tasks:", error);
+    }
+  };
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -336,7 +341,8 @@ export default function HomePage() {
         alignItems: "center",
         justifyContent: "space-between",
         marginBottom: theme.spacing.sm,
-        marginTop: isFirst ? theme.spacing.lg : theme.spacing.xl,
+        marginTop: isFirst ? theme.spacing.md : theme.spacing.lg,
+        paddingHorizontal: theme.spacing.xl,
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.sm }}>
@@ -360,24 +366,22 @@ export default function HomePage() {
     </View>
   );
 
-  // Recent Idea Card (horizontal scroll) - taller with content preview
+  // Idea Card for horizontal scroll
   const RecentIdeaCard = ({ idea }) => {
-    // Get preview text from summary or content
     const previewText = idea.summary || idea.content || "";
-    // Get category color
     const categoryColor = categoryColors[idea.category] || theme.colors.accent.primary;
 
     return (
       <TouchableOpacity
         onPress={() => handleIdeaPress(idea)}
         style={{
-          width: 200,
-          height: 180,
+          width: 180,
+          height: 160,
           backgroundColor: theme.colors.surface.level1,
           borderRadius: theme.radius.lg,
           borderWidth: 1,
           borderColor: theme.colors.border.subtle,
-          padding: theme.spacing.lg,
+          padding: theme.spacing.md,
           marginRight: theme.spacing.md,
           overflow: "hidden",
         }}
@@ -388,7 +392,7 @@ export default function HomePage() {
             alignSelf: "flex-start",
             backgroundColor: `${categoryColor}15`,
             paddingHorizontal: theme.spacing.sm,
-            paddingVertical: theme.spacing.xs,
+            paddingVertical: 3,
             borderRadius: theme.radius.sm,
             marginBottom: theme.spacing.sm,
           }}
@@ -400,6 +404,7 @@ export default function HomePage() {
               textTransform: "uppercase",
               letterSpacing: 0.5,
               fontWeight: "500",
+              fontSize: 10,
             }}
           >
             {idea.category}
@@ -409,24 +414,23 @@ export default function HomePage() {
           variant="subtitle"
           color="primary"
           numberOfLines={2}
-          style={{ marginBottom: theme.spacing.xs }}
+          style={{ marginBottom: theme.spacing.xs, fontSize: 14 }}
         >
           {idea.title}
         </AppText>
-        {/* Content preview with fade effect */}
         <View style={{ flex: 1, overflow: "hidden" }}>
           <AppText
             variant="caption"
             color="muted"
-            numberOfLines={3}
-            style={{ fontSize: 12, lineHeight: 16 }}
+            numberOfLines={2}
+            style={{ fontSize: 11, lineHeight: 15 }}
           >
             {previewText}
           </AppText>
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.xs, marginTop: theme.spacing.xs }}>
-          <Clock size={12} color={theme.colors.text.muted} />
-          <AppText variant="caption" color="muted">
+          <Clock size={10} color={theme.colors.text.muted} />
+          <AppText variant="caption" color="muted" style={{ fontSize: 10 }}>
             {formatDate(idea.created_at)}
           </AppText>
         </View>
@@ -434,32 +438,78 @@ export default function HomePage() {
     );
   };
 
+  // Add Task Button
+  const AddTaskButton = () => (
+    <TouchableOpacity
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        setShowTaskTextModal(true);
+      }}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        paddingVertical: theme.spacing.md,
+        paddingHorizontal: theme.spacing.lg,
+        backgroundColor: theme.colors.surface.level1,
+        borderRadius: theme.radius.lg,
+        borderWidth: 1,
+        borderColor: theme.colors.border.subtle,
+        borderStyle: "dashed",
+        marginTop: theme.spacing.sm,
+      }}
+      activeOpacity={0.7}
+    >
+      <Plus size={16} color={theme.colors.accent.primary} strokeWidth={2} />
+      <AppText
+        variant="body"
+        style={{ color: theme.colors.accent.primary, marginLeft: theme.spacing.sm }}
+      >
+        Add task
+      </AppText>
+    </TouchableOpacity>
+  );
 
-  // Empty State for search
-  const SearchEmptyState = () => (
+  // Empty State
+  const EmptyState = () => (
     <View
       style={{
         alignItems: "center",
+        justifyContent: "center",
         paddingVertical: theme.spacing.xxl * 2,
+        paddingHorizontal: theme.spacing.xl,
       }}
     >
+      <View
+        style={{
+          width: 80,
+          height: 80,
+          borderRadius: 40,
+          backgroundColor: theme.colors.surface.level1,
+          alignItems: "center",
+          justifyContent: "center",
+          marginBottom: theme.spacing.xl,
+        }}
+      >
+        <Lightbulb size={36} color={theme.colors.text.muted} strokeWidth={2} />
+      </View>
+      <AppText variant="title" color="primary" style={{ marginBottom: theme.spacing.sm }}>
+        Welcome to SpillStack
+      </AppText>
       <AppText variant="body" color="secondary" style={{ textAlign: "center" }}>
-        {activeTag && searchQuery
-          ? `No results found for "${searchQuery}" with tag #${activeTag}`
-          : activeTag
-          ? `No ideas found with tag #${activeTag}`
-          : `No results found for "${searchQuery}"`}
+        Tap Voice or Text above to capture your first idea!
       </AppText>
     </View>
   );
 
   const isSearching = searchQuery.length > 0 || activeTag;
-  const hasSearchResults = filteredIdeas.length > 0 || filteredTasks.length > 0;
+  const hasContent = recentIdeas.length > 0 || pendingTasks.length > 0;
 
   return (
     <AppScreen withGradient>
       <StatusBar style={isDark ? "light" : "dark"} />
 
+      {/* Compact Header */}
       <HomeHeader
         insets={insets}
         searchQuery={searchQuery}
@@ -468,11 +518,16 @@ export default function HomePage() {
         onClearTag={() => setActiveTag(null)}
       />
 
+      {/* Quick Input Buttons - ONE TAP to Voice or Text */}
+      <QuickInputButtons
+        onVoice={() => setShowVoiceModal(true)}
+        onText={() => setShowTextModal(true)}
+      />
+
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
-          paddingHorizontal: theme.spacing.xl,
-          paddingBottom: insets.bottom + 100,
+          paddingBottom: insets.bottom + 40,
         }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -485,165 +540,107 @@ export default function HomePage() {
           />
         }
       >
-        {isSearching && !hasSearchResults ? (
-          <SearchEmptyState />
+        {!hasContent && !isSearching ? (
+          <EmptyState />
         ) : (
           <>
-            {/* Recent Ideas Section */}
-            {recentIdeas.length > 0 && (
-              <>
-                <SectionHeader
-                  title="Ideas"
-                  icon={Sparkles}
-                  onSeeAll={() => router.push("/(tabs)/library/ideas?from=home")}
-                  isFirst
-                />
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={{ marginHorizontal: -theme.spacing.xl }}
-                  contentContainerStyle={{ paddingHorizontal: theme.spacing.xl }}
-                >
-                  {recentIdeas.map((idea) => (
-                    <RecentIdeaCard key={idea.id} idea={idea} />
-                  ))}
-                </ScrollView>
-              </>
+            {/* Ideas Section */}
+            <SectionHeader
+              title="Ideas"
+              icon={Sparkles}
+              onSeeAll={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setShowIdeasSheet(true);
+              }}
+              isFirst
+            />
+
+            {/* Category Filter */}
+            <CategoryFilter
+              categories={categories}
+              selectedCategory={selectedCategory}
+              onCategorySelect={setSelectedCategory}
+            />
+
+            {/* Ideas Horizontal Scroll */}
+            {recentIdeas.length > 0 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingHorizontal: theme.spacing.xl }}
+              >
+                {recentIdeas.map((idea) => (
+                  <RecentIdeaCard key={idea.id} idea={idea} />
+                ))}
+              </ScrollView>
+            ) : (
+              <View style={{ paddingHorizontal: theme.spacing.xl, paddingVertical: theme.spacing.lg }}>
+                <AppText variant="body" color="muted" style={{ textAlign: "center" }}>
+                  {isSearching ? "No ideas match your search" : "No ideas yet"}
+                </AppText>
+              </View>
             )}
 
-            {/* Upcoming Tasks Section */}
-            {pendingTasks.length > 0 && (
+            {/* Tasks Section */}
+            {!activeTag && (
               <>
                 <SectionHeader
                   title="To Do"
                   icon={CheckCircle2}
-                  onSeeAll={() => router.push("/(tabs)/library/tasks?from=home")}
-                  isFirst={recentIdeas.length === 0}
-                />
-                {pendingTasks.map((task) => (
-                  <AnimatedTaskItem
-                    key={task.id}
-                    task={task}
-                    onToggle={toggleTask}
-                    onNavigate={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      router.push("/(tabs)/library/tasks");
-                    }}
-                    formatDate={formatDate}
-                    isRemoving={removingTasks.has(task.id)}
-                    onRemoveComplete={finishRemovingTask}
-                    theme={theme}
-                  />
-                ))}
-              </>
-            )}
-
-            {/* All Recent Content (if searching) */}
-            {isSearching && filteredIdeas.length > 0 && (
-              <>
-                <SectionHeader title="Ideas" icon={Lightbulb} isFirst />
-                {filteredIdeas.slice(0, 6).map((idea) => (
-                  <TouchableOpacity
-                    key={idea.id}
-                    onPress={() => handleIdeaPress(idea)}
-                    style={{
-                      backgroundColor: theme.colors.surface.level1,
-                      borderRadius: theme.radius.lg,
-                      borderWidth: 1,
-                      borderColor: theme.colors.border.subtle,
-                      padding: theme.spacing.lg,
-                      marginBottom: theme.spacing.sm,
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
-                      <View style={{ flex: 1 }}>
-                        <AppText variant="subtitle" color="primary" numberOfLines={1}>
-                          {idea.title}
-                        </AppText>
-                        {idea.summary && (
-                          <AppText
-                            variant="caption"
-                            color="secondary"
-                            numberOfLines={2}
-                            style={{ marginTop: theme.spacing.xs }}
-                          >
-                            {idea.summary}
-                          </AppText>
-                        )}
-                      </View>
-                      <View
-                        style={{
-                          backgroundColor: `${categoryColors[idea.category] || theme.colors.accent.primary}15`,
-                          paddingHorizontal: theme.spacing.sm,
-                          paddingVertical: theme.spacing.xs,
-                          borderRadius: theme.radius.sm,
-                          marginLeft: theme.spacing.sm,
-                        }}
-                      >
-                        <AppText variant="caption" style={{ color: categoryColors[idea.category] || theme.colors.accent.primary }}>
-                          {idea.category}
-                        </AppText>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </>
-            )}
-
-            {/* Empty state when no content at all */}
-            {!isSearching && recentIdeas.length === 0 && pendingTasks.length === 0 && (
-              <View
-                style={{
-                  alignItems: "center",
-                  justifyContent: "center",
-                  paddingVertical: theme.spacing.xxl * 2,
-                }}
-              >
-                <View
-                  style={{
-                    width: 80,
-                    height: 80,
-                    borderRadius: 40,
-                    backgroundColor: theme.colors.surface.level1,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginBottom: theme.spacing.xl,
+                  onSeeAll={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setShowTasksSheet(true);
                   }}
-                >
-                  <Lightbulb size={36} color={theme.colors.text.muted} strokeWidth={2} />
+                />
+
+                <View style={{ paddingHorizontal: theme.spacing.xl }}>
+                  {pendingTasks.length > 0 ? (
+                    pendingTasks.map((task) => (
+                      <AnimatedTaskItem
+                        key={task.id}
+                        task={task}
+                        onToggle={toggleTask}
+                        formatDate={formatDate}
+                        isRemoving={removingTasks.has(task.id)}
+                        onRemoveComplete={finishRemovingTask}
+                        theme={theme}
+                      />
+                    ))
+                  ) : (
+                    <AppText variant="body" color="muted" style={{ textAlign: "center", paddingVertical: theme.spacing.md }}>
+                      {isSearching ? "No tasks match your search" : "No pending tasks"}
+                    </AppText>
+                  )}
+
+                  {/* Add Task Button */}
+                  <AddTaskButton />
                 </View>
-                <AppText
-                  variant="title"
-                  color="primary"
-                  style={{ marginBottom: theme.spacing.sm }}
-                >
-                  Welcome to SpillStack
-                </AppText>
-                <AppText
-                  variant="body"
-                  color="secondary"
-                  style={{ textAlign: "center", paddingHorizontal: theme.spacing.xl }}
-                >
-                  Tap the + button to capture your first idea via voice, text, or link.
-                </AppText>
-              </View>
+              </>
             )}
           </>
         )}
       </ScrollView>
 
-      {/* Floating Action Button */}
-      <FloatingActionButton
-        onVoice={() => setShowVoiceModal(true)}
-        onText={() => setShowTextModal(true)}
-        onLink={() => setShowLinkModal(true)}
-      />
-
-      {/* Modals */}
+      {/* Ideas Modals */}
       <VoiceModal visible={showVoiceModal} onClose={() => setShowVoiceModal(false)} />
       <TextModal visible={showTextModal} onClose={() => setShowTextModal(false)} />
       <LinkModal visible={showLinkModal} onClose={() => setShowLinkModal(false)} />
+
+      {/* Task Modals */}
+      <TaskVoiceModal
+        visible={showTaskVoiceModal}
+        onClose={() => setShowTaskVoiceModal(false)}
+        onTasksCreated={handleTasksCreated}
+      />
+      <TaskTextModal
+        visible={showTaskTextModal}
+        onClose={() => setShowTaskTextModal(false)}
+        onTasksCreated={handleTasksCreated}
+      />
+
+      {/* Full View Sheets */}
+      <IdeasSheet visible={showIdeasSheet} onClose={() => setShowIdeasSheet(false)} />
+      <TasksSheet visible={showTasksSheet} onClose={() => setShowTasksSheet(false)} />
     </AppScreen>
   );
 }

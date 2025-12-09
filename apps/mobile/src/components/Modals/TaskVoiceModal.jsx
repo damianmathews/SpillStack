@@ -204,16 +204,16 @@ export function TaskVoiceModal({ visible, onClose, onTasksCreated }) {
               style={[
                 styles.closeButton,
                 {
-                  backgroundColor: theme.colors.surface,
+                  backgroundColor: theme.colors.surface.level1,
                   height: theme.componentHeight.iconButton,
                   width: theme.componentHeight.iconButton,
                   borderRadius: theme.componentHeight.iconButton / 2,
                 },
               ]}
             >
-              <X size={20} color={theme.colors.text} strokeWidth={2} />
+              <X size={20} color={theme.colors.text.primary} strokeWidth={2} />
             </TouchableOpacity>
-            <Text style={[theme.typography.headline, { color: theme.colors.text }]}>
+            <Text style={[theme.typography.headline, { color: theme.colors.text.primary }]}>
               {stage === "idle" && "Voice Task"}
               {stage === "recording" && "Recording..."}
               {stage === "processing" && "Extracting tasks..."}
@@ -243,7 +243,7 @@ export function TaskVoiceModal({ visible, onClose, onTasksCreated }) {
                   ))}
                 </View>
 
-                <Text style={[styles.timer, { color: theme.colors.text, marginBottom: theme.spacing.xxxl + 8 }]}>
+                <Text style={[styles.timer, { color: theme.colors.text.primary, marginBottom: theme.spacing.xxxl + 8 }]}>
                   {formatTime(recorderState.currentTime || 0)}
                 </Text>
 
@@ -312,7 +312,7 @@ export function TaskVoiceModal({ visible, onClose, onTasksCreated }) {
                             : theme.colors.card,
                           borderColor: selectedTasks.has(index)
                             ? theme.colors.secondary
-                            : theme.colors.border,
+                            : theme.colors.border.subtle,
                           borderRadius: theme.borderRadius.md,
                           padding: theme.spacing.lg,
                           marginBottom: theme.spacing.md,
@@ -338,7 +338,7 @@ export function TaskVoiceModal({ visible, onClose, onTasksCreated }) {
                           <Check size={14} color="#FFFFFF" strokeWidth={2} />
                         )}
                       </View>
-                      <Text style={[theme.typography.body, { color: theme.colors.text, flex: 1 }]}>
+                      <Text style={[theme.typography.body, { color: theme.colors.text.primary, flex: 1 }]}>
                         {task}
                       </Text>
                     </TouchableOpacity>
@@ -352,8 +352,8 @@ export function TaskVoiceModal({ visible, onClose, onTasksCreated }) {
                       styles.actionButton,
                       styles.secondaryButton,
                       {
-                        backgroundColor: theme.colors.surface,
-                        borderColor: theme.colors.border,
+                        backgroundColor: theme.colors.surface.level1,
+                        borderColor: theme.colors.border.subtle,
                         height: theme.componentHeight.button,
                         borderRadius: theme.borderRadius.md,
                         gap: theme.spacing.sm,
@@ -361,8 +361,8 @@ export function TaskVoiceModal({ visible, onClose, onTasksCreated }) {
                     ]}
                     onPress={handleRetry}
                   >
-                    <RefreshCw size={20} color={theme.colors.text} strokeWidth={2} />
-                    <Text style={[theme.typography.bodyMedium, { color: theme.colors.text }]}>
+                    <RefreshCw size={20} color={theme.colors.text.primary} strokeWidth={2} />
+                    <Text style={[theme.typography.bodyMedium, { color: theme.colors.text.primary }]}>
                       Retry
                     </Text>
                   </TouchableOpacity>
@@ -374,7 +374,7 @@ export function TaskVoiceModal({ visible, onClose, onTasksCreated }) {
                       {
                         backgroundColor: selectedTasks.size > 0
                           ? theme.colors.secondary
-                          : theme.colors.surface,
+                          : theme.colors.surface.level1,
                         height: theme.componentHeight.button,
                         borderRadius: theme.borderRadius.md,
                         gap: theme.spacing.sm,
