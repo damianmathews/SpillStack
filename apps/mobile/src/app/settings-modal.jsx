@@ -329,7 +329,7 @@ export default function SettingsModal() {
           }}
         >
           <AppText variant="caption" color="muted" style={{ fontSize: 11 }}>
-            Version 1.1
+            Version 1.2
           </AppText>
         </View>
       </ScrollView>
