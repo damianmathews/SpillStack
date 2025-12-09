@@ -120,7 +120,7 @@ export const categoryColors = {
   Projects: "#14B8A6",
   Research: "#F97316",
   Personal: "#EC4899",
-  "Business Ideas": "#8B5CF6",
+  Business: "#8B5CF6",
   Creative: "#F59E0B",
   "To Do": "#06B6D4",
 };

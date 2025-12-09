@@ -3,12 +3,45 @@ import { Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const STORAGE_KEY = "@spillstack_ideas";
+const MIGRATION_KEY = "@spillstack_migrations";
 
-// Helper to get stored ideas
+// Category migrations - rename old categories to new ones
+const CATEGORY_MIGRATIONS = {
+  "Business Ideas": "Business",
+  "Ideas": "Creative",
+  "Thoughts": "Creative",
+};
+
+// Migrate a single idea's category if needed
+function migrateIdeaCategory(idea) {
+  if (idea.category && CATEGORY_MIGRATIONS[idea.category]) {
+    return { ...idea, category: CATEGORY_MIGRATIONS[idea.category] };
+  }
+  return idea;
+}
+
+// Helper to get stored ideas (with automatic migration)
 async function getStoredIdeas() {
   try {
     const stored = await AsyncStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
+    if (!stored) return [];
+
+    let ideas = JSON.parse(stored);
+
+    // Check if migration needed
+    const needsMigration = ideas.some(
+      (idea) => idea.category && CATEGORY_MIGRATIONS[idea.category]
+    );
+
+    if (needsMigration) {
+      console.log("Migrating idea categories...");
+      ideas = ideas.map(migrateIdeaCategory);
+      // Save migrated data
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(ideas));
+      console.log("Category migration complete");
+    }
+
+    return ideas;
   } catch (e) {
     console.error("Error reading stored ideas:", e);
     return [];
@@ -44,7 +77,7 @@ export function useCreateIdea(onSuccess) {
         title: title || content.split(/[.!?]/)[0].substring(0, 50),
         content: content,
         summary: summary || content.substring(0, 150),
-        category: category || "Ideas",
+        category: category || "Creative",
         source_type: source_type || "text",
         source_url: source_url || null,
         tags: tags || [],

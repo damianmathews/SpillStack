@@ -1,5 +1,5 @@
 import React from "react";
-import { View, TouchableOpacity, StyleSheet } from "react-native";
+import { View, TouchableOpacity } from "react-native";
 import { Mic, Type } from "lucide-react-native";
 import { useTheme } from "@/contexts/ThemeContext";
 import { AppText } from "@/components/primitives";
@@ -14,88 +14,64 @@ export function QuickInputButtons({ onVoice, onText }) {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Voice Button */}
-      <TouchableOpacity
-        style={[
-          styles.button,
-          {
-            backgroundColor: theme.colors.surface.level1,
-            borderColor: theme.colors.border.subtle,
-            borderRadius: theme.radius.lg,
-          },
-        ]}
-        onPress={() => handlePress(onVoice)}
-        activeOpacity={0.7}
+    <View
+      style={{
+        marginHorizontal: 20,
+        marginTop: 8,
+        marginBottom: 4,
+        backgroundColor: theme.colors.surface.level1,
+        borderRadius: theme.radius.lg,
+        borderWidth: 1,
+        borderColor: theme.colors.border.subtle,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        alignItems: "center",
+      }}
+    >
+      {/* Label - centered */}
+      <AppText
+        style={{
+          fontSize: 13,
+          fontWeight: "400",
+          color: theme.colors.text.muted,
+          marginBottom: 10,
+        }}
       >
-        <View
-          style={[
-            styles.iconCircle,
-            {
-              backgroundColor: theme.colors.accent.softBg,
-            },
-          ]}
-        >
-          <Mic size={18} color={theme.colors.accent.primary} strokeWidth={2.5} />
-        </View>
-        <AppText variant="subtitle" color="primary" style={{ fontWeight: "600", fontSize: 15 }}>
-          Voice
-        </AppText>
-      </TouchableOpacity>
+        What's on your mind?
+      </AppText>
 
-      {/* Text Button */}
-      <TouchableOpacity
-        style={[
-          styles.button,
-          {
-            backgroundColor: theme.colors.surface.level1,
-            borderColor: theme.colors.border.subtle,
-            borderRadius: theme.radius.lg,
-          },
-        ]}
-        onPress={() => handlePress(onText)}
-        activeOpacity={0.7}
-      >
-        <View
-          style={[
-            styles.iconCircle,
-            {
-              backgroundColor: theme.colors.accent.softBg,
-            },
-          ]}
+      {/* Buttons Row - centered */}
+      <View style={{ flexDirection: "row", gap: 24 }}>
+        <TouchableOpacity
+          style={{
+            width: 48,
+            height: 48,
+            borderRadius: 24,
+            backgroundColor: theme.colors.accent.primary,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          onPress={() => handlePress(onVoice)}
+          activeOpacity={0.8}
         >
-          <Type size={18} color={theme.colors.accent.primary} strokeWidth={2.5} />
-        </View>
-        <AppText variant="subtitle" color="primary" style={{ fontWeight: "600", fontSize: 15 }}>
-          Text
-        </AppText>
-      </TouchableOpacity>
+          <Mic size={22} color="#FFFFFF" strokeWidth={2.5} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={{
+            width: 48,
+            height: 48,
+            borderRadius: 24,
+            backgroundColor: theme.colors.accent.primary,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          onPress={() => handlePress(onText)}
+          activeOpacity={0.8}
+        >
+          <Type size={22} color="#FFFFFF" strokeWidth={2.5} />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    gap: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-  },
-  button: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    gap: 10,
-  },
-  iconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});

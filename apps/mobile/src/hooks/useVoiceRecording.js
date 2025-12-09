@@ -108,6 +108,16 @@ export function useVoiceRecording(onTranscriptionComplete) {
   };
 
   const stopRecording = async () => {
+    // Guard against double-stop
+    if (!recordingRef.current) {
+      console.log("No recording to stop (already stopped)");
+      return;
+    }
+
+    // Grab recording reference immediately and clear it to prevent race conditions
+    const recording = recordingRef.current;
+    recordingRef.current = null;
+
     try {
       // Stop timer
       if (timerRef.current) {
@@ -121,22 +131,29 @@ export function useVoiceRecording(onTranscriptionComplete) {
         autoStopRef.current = null;
       }
 
-      if (!recordingRef.current) {
-        throw new Error("No recording in progress");
-      }
-
       console.log("Stopping recording...");
       setIsRecording(false);
       setIsTranscribing(true);
 
-      await recordingRef.current.stopAndUnloadAsync();
+      // Check recording status before attempting to stop
+      const status = await recording.getStatusAsync().catch(() => null);
+      if (status?.isRecording || status?.isDoneRecording === false) {
+        await recording.stopAndUnloadAsync();
+      } else if (status?.isDoneRecording) {
+        // Already done, just unload if needed
+        try {
+          await recording._cleanupForUnloadedRecorder();
+        } catch (e) {
+          // Ignore - already cleaned up
+        }
+      }
 
       // Reset audio mode
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: false,
       });
 
-      const uri = recordingRef.current.getURI();
+      const uri = recording.getURI();
       console.log("Recording stopped, URI:", uri);
 
       if (!uri) {
@@ -167,9 +184,6 @@ export function useVoiceRecording(onTranscriptionComplete) {
       const aiProcessed = await processIdea(cleanedContent);
       console.log("AI processed:", aiProcessed);
 
-      // Clean up recording reference
-      recordingRef.current = null;
-
       // Call completion callback with full data
       if (onTranscriptionComplete) {
         onTranscriptionComplete({
@@ -183,7 +197,6 @@ export function useVoiceRecording(onTranscriptionComplete) {
       }
     } catch (error) {
       console.error("Recording error:", error);
-      recordingRef.current = null;
       Alert.alert(
         "Transcription Failed",
         error.message || "Please try recording again."

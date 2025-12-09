@@ -51,7 +51,7 @@ export function CategoryFilter({
   };
 
   return (
-    <View style={{ paddingVertical: theme.spacing.md }}>
+    <View style={{ paddingBottom: theme.spacing.sm }}>
       <ScrollView
         ref={scrollViewRef}
         horizontal

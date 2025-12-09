@@ -42,7 +42,7 @@ Categories:
 - Projects: things to build, development, implementation, coding
 - Research: articles, studies, investigation, learning, education
 - Personal: life, family, health, self, reminders
-- Business Ideas: startups, monetization, business, entrepreneurship
+- Business: startups, monetization, business, entrepreneurship
 - Creative: art, design, writing, music, inspiration
 
 Return ONLY the category name, nothing else.`,

@@ -57,7 +57,6 @@ const AnimatedTaskItem = memo(function AnimatedTaskItem({
 }) {
   const opacity = useSharedValue(1);
   const scale = useSharedValue(1);
-  const height = useSharedValue(60);
   const checkScale = useSharedValue(task.completed ? 1 : 0);
   const hasStartedRemoving = useRef(false);
 
@@ -67,11 +66,10 @@ const AnimatedTaskItem = memo(function AnimatedTaskItem({
       checkScale.value = withSpring(1, { damping: 12, stiffness: 200 });
 
       const timer = setTimeout(() => {
-        opacity.value = withTiming(0, { duration: 250 });
-        scale.value = withTiming(0.95, { duration: 250 });
-        height.value = withTiming(0, { duration: 250 }, () => {
+        opacity.value = withTiming(0, { duration: 250 }, () => {
           runOnJS(onRemoveComplete)(task.id);
         });
+        scale.value = withTiming(0.95, { duration: 250 });
       }, 2000);
 
       return () => clearTimeout(timer);
@@ -81,9 +79,6 @@ const AnimatedTaskItem = memo(function AnimatedTaskItem({
   const containerStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
     transform: [{ scale: scale.value }],
-    height: height.value,
-    marginBottom: height.value > 0 ? 8 : 0,
-    overflow: "hidden",
   }));
 
   const checkmarkStyle = useAnimatedStyle(() => ({
@@ -93,22 +88,22 @@ const AnimatedTaskItem = memo(function AnimatedTaskItem({
   const isChecked = task.completed || isRemoving;
 
   return (
-    <Animated.View style={containerStyle}>
+    <Animated.View style={[containerStyle, { marginBottom: 8 }]}>
       <View
         style={{
           flexDirection: "row",
           alignItems: "center",
           backgroundColor: theme.colors.surface.level1,
-          borderRadius: theme.radius.lg,
+          borderRadius: theme.radius.md,
           borderWidth: 1,
           borderColor: theme.colors.border.subtle,
-          padding: theme.spacing.md,
-          height: 52,
+          paddingVertical: 12,
+          paddingHorizontal: theme.spacing.md,
         }}
       >
         <TouchableOpacity
           onPress={() => onToggle(task.id)}
-          style={{ marginRight: theme.spacing.sm }}
+          style={{ marginRight: theme.spacing.md }}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           disabled={isRemoving}
         >
@@ -116,9 +111,9 @@ const AnimatedTaskItem = memo(function AnimatedTaskItem({
             <Animated.View
               style={[
                 {
-                  width: 20,
-                  height: 20,
-                  borderRadius: 10,
+                  width: 18,
+                  height: 18,
+                  borderRadius: 4,
                   backgroundColor: theme.colors.accent.primary,
                   alignItems: "center",
                   justifyContent: "center",
@@ -126,28 +121,35 @@ const AnimatedTaskItem = memo(function AnimatedTaskItem({
                 checkmarkStyle,
               ]}
             >
-              <Check size={14} color="#FFFFFF" strokeWidth={3} />
+              <Check size={12} color="#FFFFFF" strokeWidth={3} />
             </Animated.View>
           ) : (
-            <Circle size={20} color={theme.colors.text.muted} />
+            <View
+              style={{
+                width: 18,
+                height: 18,
+                borderRadius: 4,
+                borderWidth: 1.5,
+                borderColor: theme.colors.text.muted,
+              }}
+            />
           )}
         </TouchableOpacity>
         <View style={{ flex: 1, marginRight: theme.spacing.md }}>
           <AppText
-            variant="caption"
             color={isChecked ? "muted" : "primary"}
             numberOfLines={1}
             ellipsizeMode="tail"
             style={{
               textDecorationLine: isChecked ? "line-through" : "none",
               opacity: isChecked ? 0.6 : 1,
-              fontSize: 14,
+              fontSize: 15,
             }}
           >
             {task.title}
           </AppText>
         </View>
-        <AppText variant="caption" color="muted" style={{ fontSize: 12, flexShrink: 0 }}>
+        <AppText style={{ fontSize: 12, color: theme.colors.text.muted, flexShrink: 0 }}>
           {formatDate(task.created_at)}
         </AppText>
       </View>
@@ -347,38 +349,72 @@ export default function HomePage() {
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
-  // Section Header Component
-  const SectionHeader = ({ title, icon: Icon, onSeeAll, isFirst }) => (
-    <View
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        marginBottom: theme.spacing.sm,
-        marginTop: isFirst ? theme.spacing.md : theme.spacing.lg,
-        paddingHorizontal: theme.spacing.xl,
-      }}
-    >
-      <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.sm }}>
-        <Icon size={18} color={theme.colors.accent.primary} />
-        <AppText variant="subtitle" color="primary" style={{ fontWeight: "600" }}>
+  // Section Header Component - simple text row, no container
+  const SectionHeader = ({ title, onSeeAll, isFirst, count }) => {
+    const content = (
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingVertical: theme.spacing.xs,
+        }}
+      >
+        <AppText
+          style={{
+            fontWeight: "600",
+            color: theme.colors.text.secondary,
+            textTransform: "uppercase",
+            letterSpacing: 1,
+            fontSize: 13,
+          }}
+        >
           {title}
         </AppText>
+        {onSeeAll && (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <AppText
+              style={{
+                fontSize: 13,
+                fontWeight: "400",
+                color: theme.colors.accent.primary,
+              }}
+            >
+              See all
+            </AppText>
+            {count !== undefined && (
+              <AppText
+                style={{
+                  fontSize: 13,
+                  fontWeight: "400",
+                  color: theme.colors.accent.primary,
+                }}
+              >
+                ({count})
+              </AppText>
+            )}
+            <ChevronRight size={14} color={theme.colors.accent.primary} />
+          </View>
+        )}
       </View>
-      {onSeeAll && (
-        <TouchableOpacity
-          onPress={onSeeAll}
-          style={{ flexDirection: "row", alignItems: "center" }}
-          activeOpacity={0.7}
-        >
-          <AppText variant="caption" color="secondary">
-            See all
-          </AppText>
-          <ChevronRight size={14} color={theme.colors.text.secondary} />
+    );
+
+    const wrapperStyle = {
+      marginBottom: theme.spacing.xs,
+      marginTop: isFirst ? theme.spacing.sm : theme.spacing.xxl,
+      paddingHorizontal: theme.spacing.xl,
+    };
+
+    if (onSeeAll) {
+      return (
+        <TouchableOpacity onPress={onSeeAll} activeOpacity={0.6} style={wrapperStyle}>
+          {content}
         </TouchableOpacity>
-      )}
-    </View>
-  );
+      );
+    }
+
+    return <View style={wrapperStyle}>{content}</View>;
+  };
 
   // Idea Card for horizontal scroll
   const RecentIdeaCard = ({ idea }) => {
@@ -500,11 +536,13 @@ export default function HomePage() {
         onClearTag={() => setActiveTag(null)}
       />
 
-      {/* Quick Input Buttons - ONE TAP to Voice or Text */}
-      <QuickInputButtons
-        onVoice={() => setShowVoiceModal(true)}
-        onText={() => setShowTextModal(true)}
-      />
+      {/* Quick Input Buttons - ONE TAP to Voice or Text (hide when searching) */}
+      {!searchQuery && (
+        <QuickInputButtons
+          onVoice={() => setShowVoiceModal(true)}
+          onText={() => setShowTextModal(true)}
+        />
+      )}
 
       <ScrollView
         style={{ flex: 1 }}
@@ -528,14 +566,14 @@ export default function HomePage() {
           <>
             {/* Ideas Section */}
             <SectionHeader
-              title="Ideas"
-              icon={Sparkles}
+              title="Thoughts"
               onSeeAll={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 setIdeasSheetCategory("All");
                 setShowIdeasSheet(true);
               }}
               isFirst
+              count={filteredIdeas.length}
             />
 
             {/* Category Filter */}
@@ -559,7 +597,7 @@ export default function HomePage() {
             ) : (
               <View style={{ paddingHorizontal: theme.spacing.xl, paddingVertical: theme.spacing.lg }}>
                 <AppText variant="body" color="muted" style={{ textAlign: "center" }}>
-                  {isSearching ? "No ideas match your search" : "No ideas yet"}
+                  {isSearching ? "No thoughts match your search" : "No thoughts yet"}
                 </AppText>
               </View>
             )}
@@ -569,11 +607,11 @@ export default function HomePage() {
               <>
                 <SectionHeader
                   title="To Do"
-                  icon={CheckCircle2}
                   onSeeAll={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     setShowTasksSheet(true);
                   }}
+                  count={filteredTasks.filter(t => !t.completed).length}
                 />
 
                 <View style={{ paddingHorizontal: theme.spacing.xl }}>

@@ -164,11 +164,12 @@ export default function SettingsModal() {
         key={index}
         style={{
           backgroundColor: theme.colors.surface.level1,
-          borderRadius: theme.radius.lg,
+          borderRadius: theme.radius.md,
           borderWidth: 1,
           borderColor: theme.colors.border.subtle,
-          padding: theme.spacing.lg,
-          marginBottom: theme.spacing.md,
+          paddingHorizontal: theme.spacing.md,
+          paddingVertical: theme.spacing.sm + 2,
+          marginBottom: theme.spacing.sm,
           flexDirection: "row",
           alignItems: "center",
         }}
@@ -178,19 +179,19 @@ export default function SettingsModal() {
       >
         <View
           style={{
-            width: theme.componentHeight.iconButton,
-            height: theme.componentHeight.iconButton,
+            width: 32,
+            height: 32,
             borderRadius: theme.radius.sm,
             backgroundColor: item.type === "danger"
               ? `${theme.colors.danger}15`
               : theme.colors.accent.softBg,
             alignItems: "center",
             justifyContent: "center",
-            marginRight: theme.spacing.lg - 2,
+            marginRight: theme.spacing.md,
           }}
         >
           <IconComponent
-            size={20}
+            size={16}
             color={
               item.type === "danger" ? theme.colors.danger : theme.colors.accent.primary
             }
@@ -199,18 +200,21 @@ export default function SettingsModal() {
 
         <View style={{ flex: 1 }}>
           <AppText
-            variant="subtitle"
+            variant="caption"
             color="primary"
             style={{
-              marginBottom: theme.spacing.xs,
+              fontSize: 14,
+              fontWeight: "500",
               color: item.type === "danger" ? theme.colors.danger : theme.colors.text.primary,
             }}
           >
             {item.title}
           </AppText>
-          <AppText variant="caption" color="secondary">
-            {item.subtitle}
-          </AppText>
+          {item.subtitle && (
+            <AppText variant="caption" color="secondary" style={{ fontSize: 11, marginTop: 2 }}>
+              {item.subtitle}
+            </AppText>
+          )}
         </View>
 
         {item.type === "switch" && (
@@ -223,11 +227,12 @@ export default function SettingsModal() {
             }}
             thumbColor="#FFFFFF"
             ios_backgroundColor={theme.colors.border.subtle}
+            style={{ transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }] }}
           />
         )}
 
         {item.type === "navigation" && (
-          <ChevronRight size={20} color={theme.colors.text.muted} />
+          <ChevronRight size={16} color={theme.colors.text.muted} />
         )}
       </TouchableOpacity>
     );
@@ -240,18 +245,36 @@ export default function SettingsModal() {
       {/* Header with Logo and Close Button */}
       <View
         style={{
-          paddingTop: insets.top - 8,
-          paddingBottom: 4,
+          paddingTop: insets.top + theme.spacing.sm,
           paddingHorizontal: theme.spacing.xl,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
         }}
       >
-        {/* Close button - positioned absolute top right */}
+        {/* Logo centered */}
+        <Image
+          source={
+            isDark
+              ? require("../../assets/spillstack-logo-white.png")
+              : require("../../assets/spillstack-logo-black.png")
+          }
+          style={{
+            width: 440,
+            height: 110,
+            marginTop: -30,
+            marginBottom: -40,
+          }}
+          resizeMode="contain"
+        />
+
+        {/* Close button - absolute right */}
         <TouchableOpacity
           onPress={handleClose}
           style={{
             position: "absolute",
-            top: insets.top - 8,
             right: theme.spacing.xl,
+            top: insets.top + theme.spacing.sm,
             width: 36,
             height: 36,
             borderRadius: 18,
@@ -260,52 +283,33 @@ export default function SettingsModal() {
             justifyContent: "center",
             borderWidth: 1,
             borderColor: theme.colors.border.subtle,
-            zIndex: 10,
           }}
           activeOpacity={0.7}
         >
           <X size={18} color={theme.colors.text.secondary} />
         </TouchableOpacity>
-
-        {/* Big Logo centered - 2x size (440x110) */}
-        <View style={{ alignItems: "center", marginBottom: -38 }}>
-          <Image
-            source={
-              isDark
-                ? require("../../assets/spillstack-logo-white.png")
-                : require("../../assets/spillstack-logo-black.png")
-            }
-            style={{
-              width: 440,
-              height: 110,
-            }}
-            resizeMode="contain"
-          />
-        </View>
-
-        <AppText variant="body" color="primary" style={{ textAlign: "center", fontSize: 16 }}>
-          Settings
-        </AppText>
       </View>
 
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
-          padding: theme.spacing.xl,
-          paddingBottom: insets.bottom + 40,
+          paddingHorizontal: theme.spacing.lg,
+          paddingTop: theme.spacing.xl,
+          paddingBottom: insets.bottom + 20,
         }}
         showsVerticalScrollIndicator={false}
       >
         {settingSections.map((section, sectionIndex) => (
-          <View key={sectionIndex} style={{ marginBottom: theme.spacing.xxl + 4 }}>
+          <View key={sectionIndex} style={{ marginBottom: theme.spacing.md }}>
             <AppText
-              variant="subtitle"
+              variant="caption"
               color="muted"
               style={{
-                marginBottom: theme.spacing.md,
+                marginBottom: theme.spacing.sm,
                 marginLeft: theme.spacing.xs,
                 textTransform: "uppercase",
                 letterSpacing: 0.5,
+                fontSize: 11,
               }}
             >
               {section.title}
@@ -320,13 +324,11 @@ export default function SettingsModal() {
         <View
           style={{
             alignItems: "center",
-            paddingTop: theme.spacing.xxl,
-            marginTop: theme.spacing.lg,
-            borderTopWidth: 1,
-            borderTopColor: theme.colors.border.subtle,
+            paddingTop: theme.spacing.md,
+            marginTop: theme.spacing.sm,
           }}
         >
-          <AppText variant="caption" color="muted">
+          <AppText variant="caption" color="muted" style={{ fontSize: 11 }}>
             Version 1.1
           </AppText>
         </View>

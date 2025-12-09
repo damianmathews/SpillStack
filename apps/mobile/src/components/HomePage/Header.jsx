@@ -10,7 +10,7 @@ export function Header({
   insets,
   searchQuery,
   onSearchChange,
-  title = "Ideas",
+  title = "Thoughts",
   showBackButton = false,
   onBackPress,
   backLabel = "Back",

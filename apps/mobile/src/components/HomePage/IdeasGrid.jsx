@@ -33,7 +33,7 @@ export function IdeasGrid({
           marginTop: 20,
         }}
       >
-        No Ideas Yet
+        No Thoughts Yet
       </Text>
       <Text
         style={{
@@ -43,7 +43,7 @@ export function IdeasGrid({
           lineHeight: 24,
         }}
       >
-        Start capturing your thoughts and ideas! {"\n"}Tap the + button to
+        Start capturing your thoughts! {"\n"}Tap Voice or Text to
         begin.
       </Text>
     </View>

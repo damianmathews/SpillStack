@@ -132,18 +132,26 @@ export function TasksSheet({ visible, onClose }) {
         {task.completed ? (
           <View
             style={{
-              width: 20,
-              height: 20,
-              borderRadius: 10,
+              width: 18,
+              height: 18,
+              borderRadius: 4,
               backgroundColor: theme.colors.accent.primary,
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <Check size={14} color="#FFFFFF" strokeWidth={3} />
+            <Check size={12} color="#FFFFFF" strokeWidth={3} />
           </View>
         ) : (
-          <Circle size={20} color={theme.colors.text.muted} />
+          <View
+            style={{
+              width: 18,
+              height: 18,
+              borderRadius: 4,
+              borderWidth: 1.5,
+              borderColor: theme.colors.text.muted,
+            }}
+          />
         )}
       </TouchableOpacity>
 
@@ -291,8 +299,6 @@ export function TasksSheet({ visible, onClose }) {
             paddingTop: insets.top + theme.spacing.md,
             paddingBottom: theme.spacing.md,
             paddingHorizontal: theme.spacing.xl,
-            borderBottomWidth: 1,
-            borderBottomColor: theme.colors.border.subtle,
           }}
         >
           <View
@@ -303,8 +309,16 @@ export function TasksSheet({ visible, onClose }) {
               marginBottom: theme.spacing.md,
             }}
           >
-            <AppText variant="display" color="primary">
-              All Tasks
+            <AppText
+              style={{
+                fontWeight: "600",
+                color: theme.colors.text.secondary,
+                textTransform: "uppercase",
+                letterSpacing: 1,
+                fontSize: 14,
+              }}
+            >
+              To Do
             </AppText>
             <TouchableOpacity
               onPress={handleClose}
@@ -341,7 +355,7 @@ export function TasksSheet({ visible, onClose }) {
             <TextInput
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholder="Search tasks..."
+              placeholder=""
               placeholderTextColor={theme.colors.text.muted}
               returnKeyType="search"
               onSubmitEditing={Keyboard.dismiss}

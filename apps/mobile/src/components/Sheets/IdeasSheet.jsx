@@ -128,12 +128,12 @@ export function IdeasSheet({ visible, onClose, initialCategory = "All" }) {
         <Lightbulb size={36} color={theme.colors.text.muted} strokeWidth={2} />
       </View>
       <AppText variant="title" color="primary" style={{ marginBottom: theme.spacing.sm }}>
-        No ideas found
+        No thoughts found
       </AppText>
       <AppText variant="body" color="secondary" style={{ textAlign: "center" }}>
         {searchQuery
-          ? `No ideas match "${searchQuery}"`
-          : "Start capturing ideas with Voice or Text!"}
+          ? `No thoughts match "${searchQuery}"`
+          : "Start capturing thoughts with Voice or Text!"}
       </AppText>
     </View>
   );
@@ -157,8 +157,6 @@ export function IdeasSheet({ visible, onClose, initialCategory = "All" }) {
             paddingTop: insets.top + theme.spacing.md,
             paddingBottom: theme.spacing.md,
             paddingHorizontal: theme.spacing.xl,
-            borderBottomWidth: 1,
-            borderBottomColor: theme.colors.border.subtle,
           }}
         >
           <View
@@ -169,8 +167,16 @@ export function IdeasSheet({ visible, onClose, initialCategory = "All" }) {
               marginBottom: theme.spacing.md,
             }}
           >
-            <AppText variant="display" color="primary">
-              All Ideas
+            <AppText
+              style={{
+                fontWeight: "600",
+                color: theme.colors.text.secondary,
+                textTransform: "uppercase",
+                letterSpacing: 1,
+                fontSize: 14,
+              }}
+            >
+              Thoughts
             </AppText>
             <TouchableOpacity
               onPress={handleClose}
@@ -207,7 +213,7 @@ export function IdeasSheet({ visible, onClose, initialCategory = "All" }) {
             <TextInput
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholder="Search ideas..."
+              placeholder=""
               placeholderTextColor={theme.colors.text.muted}
               returnKeyType="search"
               onSubmitEditing={Keyboard.dismiss}
@@ -230,12 +236,14 @@ export function IdeasSheet({ visible, onClose, initialCategory = "All" }) {
         </View>
 
         {/* Category Filter */}
-        <CategoryFilter
-          categories={categories}
-          selectedCategory={selectedCategory}
-          onCategorySelect={setSelectedCategory}
-          scrollToSelected={visible && initialCategory !== "All"}
-        />
+        <View style={{ paddingTop: theme.spacing.sm }}>
+          <CategoryFilter
+            categories={categories}
+            selectedCategory={selectedCategory}
+            onCategorySelect={setSelectedCategory}
+            scrollToSelected={visible && initialCategory !== "All"}
+          />
+        </View>
 
         {/* Ideas Grid */}
         <FlatList

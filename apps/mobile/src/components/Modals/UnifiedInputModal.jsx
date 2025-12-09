@@ -11,8 +11,8 @@ import {
   Platform,
   ScrollView,
   Alert,
-  ActionSheetIOS,
   Animated,
+  Pressable,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
@@ -29,6 +29,12 @@ import {
   Lightbulb,
   CheckCircle2,
   ChevronDown,
+  ChevronUp,
+  FolderKanban,
+  Search,
+  User,
+  Briefcase,
+  Palette,
 } from "lucide-react-native";
 import { useTheme, categoryColors } from "@/contexts/ThemeContext";
 import { useCreateIdea, getStoredIdeas } from "@/hooks/useCreateIdea";
@@ -64,6 +70,17 @@ export function UnifiedInputModal({ visible, mode = "text", onClose }) {
   const [selectedCategory, setSelectedCategory] = useState(null); // User override for ideas
   const [duplicateIdea, setDuplicateIdea] = useState(null);
   const [isReprocessing, setIsReprocessing] = useState(false);
+  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
+  const dropdownAnim = useRef(new Animated.Value(0)).current;
+
+  // Category icons mapping
+  const categoryIcons = {
+    Projects: FolderKanban,
+    Research: Search,
+    Personal: User,
+    Business: Briefcase,
+    Creative: Palette,
+  };
 
   // Voice recording state
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -171,6 +188,8 @@ export function UnifiedInputModal({ visible, mode = "text", onClose }) {
     setSelectedCategory(null);
     setDuplicateIdea(null);
     setIsReprocessing(false);
+    setShowTypeDropdown(false);
+    dropdownAnim.setValue(0);
   };
 
   const handleTextChange = (value) => {
@@ -260,21 +279,39 @@ export function UnifiedInputModal({ visible, mode = "text", onClose }) {
     setIsReprocessing(false);
   };
 
-  const showTypePicker = () => {
-    if (Platform.OS === "ios") {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options: ["Cancel", "Save as Idea", "Save as Task"],
-          cancelButtonIndex: 0,
-        },
-        (buttonIndex) => {
-          if (buttonIndex === 1) handleTypeSwitch("idea");
-          if (buttonIndex === 2) handleTypeSwitch("task");
-        }
-      );
-    } else {
-      // Android - simple toggle
-      handleTypeSwitch(selectedType === "idea" ? "task" : "idea");
+  const toggleTypeDropdown = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const toValue = showTypeDropdown ? 0 : 1;
+    setShowTypeDropdown(!showTypeDropdown);
+    Animated.spring(dropdownAnim, {
+      toValue,
+      useNativeDriver: true,
+      tension: 100,
+      friction: 10,
+    }).start();
+  };
+
+  const handleDropdownSelect = async (type, category = null) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    // Close dropdown
+    setShowTypeDropdown(false);
+    Animated.spring(dropdownAnim, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 100,
+      friction: 10,
+    }).start();
+
+    if (type === "task" && selectedType !== "task") {
+      await handleTypeSwitch("task");
+    } else if (type === "idea") {
+      if (selectedType !== "idea") {
+        await handleTypeSwitch("idea");
+      }
+      if (category) {
+        setSelectedCategory(category);
+      }
     }
   };
 
@@ -602,52 +639,193 @@ export function UnifiedInputModal({ visible, mode = "text", onClose }) {
                 style={styles.previewScrollView}
                 contentContainerStyle={[styles.previewContainer, { paddingHorizontal: theme.spacing.xl }]}
                 showsVerticalScrollIndicator={false}
+                onScrollBeginDrag={() => {
+                  if (showTypeDropdown) {
+                    setShowTypeDropdown(false);
+                    dropdownAnim.setValue(0);
+                  }
+                }}
               >
-                {/* Type Selector */}
-                <TouchableOpacity
-                  onPress={showTypePicker}
-                  disabled={isReprocessing}
-                  style={[
-                    styles.typeSelector,
-                    {
-                      backgroundColor: currentType === "idea" ? `${theme.colors.accent.primary}20` : `${theme.colors.success}20`,
-                      borderRadius: theme.radius.pill,
-                      paddingHorizontal: theme.spacing.lg,
-                      paddingVertical: theme.spacing.sm,
-                      marginBottom: theme.spacing.md,
-                    },
-                  ]}
-                >
-                  {isReprocessing ? (
-                    <ActivityIndicator size="small" color={currentType === "idea" ? theme.colors.accent.primary : theme.colors.success} />
-                  ) : (
-                    <>
-                      {currentType === "idea" ? (
-                        <Lightbulb size={16} color={theme.colors.accent.primary} strokeWidth={2} />
-                      ) : (
-                        <CheckCircle2 size={16} color={theme.colors.success} strokeWidth={2} />
-                      )}
-                      <Text
+                {/* Backdrop to close dropdown when tapping outside */}
+                {showTypeDropdown && (
+                  <Pressable
+                    style={StyleSheet.absoluteFill}
+                    onPress={() => {
+                      setShowTypeDropdown(false);
+                      dropdownAnim.setValue(0);
+                    }}
+                  />
+                )}
+
+                {/* Type Selector with Dropdown */}
+                <View style={{ alignSelf: "center", marginBottom: theme.spacing.md, zIndex: 100 }}>
+                  <TouchableOpacity
+                    onPress={toggleTypeDropdown}
+                    disabled={isReprocessing}
+                    style={[
+                      styles.typeSelector,
+                      {
+                        backgroundColor: currentType === "idea" ? `${categoryColor}20` : `${theme.colors.success}20`,
+                        borderRadius: theme.radius.pill,
+                        paddingHorizontal: theme.spacing.md,
+                        paddingVertical: theme.spacing.xs + 2,
+                      },
+                    ]}
+                  >
+                    {isReprocessing ? (
+                      <ActivityIndicator size="small" color={currentType === "idea" ? categoryColor : theme.colors.success} />
+                    ) : (
+                      <>
+                        {currentType === "idea" ? (
+                          (() => {
+                            const IconComp = categoryIcons[selectedCategory] || Lightbulb;
+                            return <IconComp size={14} color={categoryColor} strokeWidth={2} />;
+                          })()
+                        ) : (
+                          <CheckCircle2 size={14} color={theme.colors.success} strokeWidth={2} />
+                        )}
+                        <Text
+                          style={[
+                            theme.typography.caption,
+                            {
+                              color: currentType === "idea" ? categoryColor : theme.colors.success,
+                              marginLeft: theme.spacing.xs,
+                              textTransform: "uppercase",
+                              letterSpacing: 0.5,
+                              fontSize: 12,
+                              fontWeight: "600",
+                            },
+                          ]}
+                        >
+                          {currentType === "idea" ? selectedCategory || "Thought" : "Task"}
+                        </Text>
+                        {showTypeDropdown ? (
+                          <ChevronUp
+                            size={14}
+                            color={currentType === "idea" ? categoryColor : theme.colors.success}
+                            style={{ marginLeft: 2 }}
+                          />
+                        ) : (
+                          <ChevronDown
+                            size={14}
+                            color={currentType === "idea" ? categoryColor : theme.colors.success}
+                            style={{ marginLeft: 2 }}
+                          />
+                        )}
+                      </>
+                    )}
+                  </TouchableOpacity>
+
+                  {/* Animated Dropdown */}
+                  {showTypeDropdown && (
+                    <Animated.View
+                      style={[
+                        styles.dropdown,
+                        {
+                          backgroundColor: theme.colors.surface.level1,
+                          borderColor: theme.colors.border.subtle,
+                          borderRadius: theme.radius.lg,
+                          transform: [
+                            {
+                              scaleY: dropdownAnim.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [0.8, 1],
+                              }),
+                            },
+                          ],
+                          opacity: dropdownAnim,
+                        },
+                      ]}
+                    >
+                      {/* Task Option */}
+                      <TouchableOpacity
+                        onPress={() => handleDropdownSelect("task")}
                         style={[
-                          theme.typography.bodyMedium,
+                          styles.dropdownItem,
                           {
-                            color: currentType === "idea" ? theme.colors.accent.primary : theme.colors.success,
-                            marginLeft: theme.spacing.sm,
-                            textTransform: "uppercase",
-                            letterSpacing: 0.5,
+                            backgroundColor: currentType === "task" ? `${theme.colors.success}15` : "transparent",
+                            borderRadius: theme.radius.sm,
+                            padding: theme.spacing.sm,
                           },
                         ]}
                       >
-                        {currentType === "idea" ? "Idea" : "Task"}
+                        <View
+                          style={{
+                            width: 24,
+                            height: 24,
+                            borderRadius: 12,
+                            backgroundColor: `${theme.colors.success}20`,
+                            alignItems: "center",
+                            justifyContent: "center",
+                            marginRight: theme.spacing.sm,
+                          }}
+                        >
+                          <CheckCircle2 size={12} color={theme.colors.success} strokeWidth={2} />
+                        </View>
+                        <Text style={[theme.typography.caption, { color: theme.colors.success, flex: 1, fontSize: 13 }]}>Task</Text>
+                        {currentType === "task" && <Check size={14} color={theme.colors.success} strokeWidth={2} />}
+                      </TouchableOpacity>
+
+                      {/* Divider */}
+                      <View style={{ height: 1, backgroundColor: theme.colors.border.subtle, marginVertical: theme.spacing.xs }} />
+
+                      {/* Category Options for Ideas */}
+                      <Text
+                        style={[
+                          theme.typography.caption,
+                          {
+                            color: theme.colors.text.muted,
+                            marginLeft: theme.spacing.sm,
+                            marginBottom: theme.spacing.xs,
+                            textTransform: "uppercase",
+                            letterSpacing: 0.5,
+                            fontSize: 9,
+                          },
+                        ]}
+                      >
+                        Save as Idea
                       </Text>
-                      <ChevronDown
-                        size={16}
-                        color={currentType === "idea" ? theme.colors.accent.primary : theme.colors.success}
-                        style={{ marginLeft: 4 }}
-                      />
-                    </>
+                      {defaultCategories
+                        .filter((c) => c.name !== "All")
+                        .map((category) => {
+                          const IconComp = categoryIcons[category.name] || Lightbulb;
+                          const catColor = categoryColors[category.name] || theme.colors.accent.primary;
+                          const isSelected = currentType === "idea" && selectedCategory === category.name;
+
+                          return (
+                            <TouchableOpacity
+                              key={category.name}
+                              onPress={() => handleDropdownSelect("idea", category.name)}
+                              style={[
+                                styles.dropdownItem,
+                                {
+                                  backgroundColor: isSelected ? `${catColor}15` : "transparent",
+                                  borderRadius: theme.radius.sm,
+                                  padding: theme.spacing.sm,
+                                },
+                              ]}
+                            >
+                              <View
+                                style={{
+                                  width: 24,
+                                  height: 24,
+                                  borderRadius: 12,
+                                  backgroundColor: `${catColor}20`,
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  marginRight: theme.spacing.sm,
+                                }}
+                              >
+                                <IconComp size={12} color={catColor} strokeWidth={2} />
+                              </View>
+                              <Text style={[theme.typography.caption, { color: catColor, flex: 1, fontSize: 13 }]}>{category.name}</Text>
+                              {isSelected && <Check size={14} color={catColor} strokeWidth={2} />}
+                            </TouchableOpacity>
+                          );
+                        })}
+                    </Animated.View>
                   )}
-                </TouchableOpacity>
+                </View>
 
                 {/* Title (for ideas) or Task list (for tasks) */}
                 {currentType === "idea" ? (
@@ -655,29 +833,11 @@ export function UnifiedInputModal({ visible, mode = "text", onClose }) {
                     <Text
                       style={[
                         theme.typography.title,
-                        { color: theme.colors.text.primary, textAlign: "center", marginBottom: theme.spacing.md },
+                        { color: theme.colors.text.primary, textAlign: "center", marginBottom: theme.spacing.lg },
                       ]}
                     >
                       {processedResult.data.title}
                     </Text>
-
-                    {/* Category Badge - tappable */}
-                    <TouchableOpacity
-                      onPress={showCategoryPicker}
-                      style={[
-                        styles.categoryBadge,
-                        {
-                          backgroundColor: `${categoryColor}20`,
-                          borderRadius: theme.radius.pill,
-                          paddingHorizontal: theme.spacing.lg,
-                          paddingVertical: theme.spacing.sm,
-                          marginBottom: theme.spacing.xl,
-                        },
-                      ]}
-                    >
-                      <Text style={[theme.typography.bodyMedium, { color: categoryColor }]}>{selectedCategory}</Text>
-                      <ChevronDown size={14} color={categoryColor} style={{ marginLeft: 4 }} />
-                    </TouchableOpacity>
 
                     {/* Summary Card */}
                     <View
@@ -1071,5 +1231,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     alignSelf: "center",
+  },
+  dropdown: {
+    position: "absolute",
+    top: "100%",
+    left: -30,
+    right: -30,
+    marginTop: 6,
+    padding: 6,
+    borderWidth: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+    minWidth: 180,
+  },
+  dropdownItem: {
+    flexDirection: "row",
+    alignItems: "center",
   },
 });

@@ -85,7 +85,7 @@ export function HomeHeader({ insets, searchQuery, onSearchChange, activeTag, onC
             ref={searchInputRef}
             value={searchQuery}
             onChangeText={onSearchChange}
-            placeholder={activeTag ? "Filter..." : "Search ideas and tasks..."}
+            placeholder={activeTag ? "Filter..." : "Search thoughts and tasks..."}
             placeholderTextColor={theme.colors.text.muted}
             returnKeyType="search"
             onSubmitEditing={Keyboard.dismiss}

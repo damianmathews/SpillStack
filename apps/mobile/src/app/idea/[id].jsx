@@ -87,7 +87,7 @@ export default function IdeaDetailScreen() {
       setEditedTitle(idea.title || "");
       setEditedContent(idea.content || "");
       setEditedSummary(idea.summary || "");
-      setEditedCategory(idea.category || "Ideas");
+      setEditedCategory(idea.category || "Thoughts");
       setEditedTags(idea.tags || []);
 
       // Find similar ideas
