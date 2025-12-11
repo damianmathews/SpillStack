@@ -40,14 +40,12 @@ import { useTheme, categoryColors } from "@/contexts/ThemeContext";
 import { useCreateIdea, getStoredIdeas } from "@/hooks/useCreateIdea";
 import { useVoiceRecording } from "@/hooks/useVoiceRecording";
 import { processUnifiedInput, reprocessAs, checkDuplicate } from "@/services/ai";
-import { sampleIdeas, sampleTasks, categories as defaultCategories } from "@/data/sampleData";
+import { categories as defaultCategories } from "@/data/sampleData";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { BouncingDotsLoader } from "@/components/LoadingAnimations/BouncingDotsLoader";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQueryClient } from "@tanstack/react-query";
-
-const TASKS_STORAGE_KEY = "@spillstack_tasks";
+import { addTask as firestoreAddTask } from "@/services/firestore";
 
 export function UnifiedInputModal({ visible, mode = "text", onClose }) {
   const { theme, isDark } = useTheme();
@@ -214,7 +212,7 @@ export function UnifiedInputModal({ visible, mode = "text", onClose }) {
         // Check for duplicates (ideas only)
         try {
           const localIdeas = await getStoredIdeas();
-          const allIdeas = [...localIdeas, ...sampleIdeas];
+          const allIdeas = localIdeas;
           const { isDuplicate, similarTo } = await checkDuplicate(content, allIdeas);
 
           if (isDuplicate && similarTo) {
@@ -410,20 +408,14 @@ export function UnifiedInputModal({ visible, mode = "text", onClose }) {
     const finalType = selectedType || processedResult.type;
 
     if (finalType === "task") {
-      // Save tasks
+      // Save tasks to Firestore
       const tasks = processedResult.data.tasks || [processedResult.rawContent];
-      const newTasks = tasks.map((title, index) => ({
-        id: `task-${Date.now()}-${index}`,
-        title,
-        completed: false,
-        created_at: new Date().toISOString(),
-      }));
 
       try {
-        const stored = await AsyncStorage.getItem(TASKS_STORAGE_KEY);
-        const currentTasks = stored ? JSON.parse(stored) : sampleTasks;
-        const updatedTasks = [...newTasks, ...currentTasks];
-        await AsyncStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(updatedTasks));
+        // Add each task to Firestore
+        for (const title of tasks) {
+          await firestoreAddTask({ title });
+        }
         queryClient.invalidateQueries({ queryKey: ["localTasks"] });
         handleSuccess();
       } catch (error) {

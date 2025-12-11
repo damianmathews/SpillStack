@@ -1,60 +1,27 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Alert } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  addIdea as firestoreAddIdea,
+  updateIdea as firestoreUpdateIdea,
+  deleteIdea as firestoreDeleteIdea,
+  getIdeas as firestoreGetIdeas,
+} from "@/services/firestore";
 
-const STORAGE_KEY = "@spillstack_ideas";
-const MIGRATION_KEY = "@spillstack_migrations";
+export const STORAGE_KEY = "@spillstack_ideas"; // Keep for reference
 
-// Category migrations - rename old categories to new ones
-const CATEGORY_MIGRATIONS = {
-  "Business Ideas": "Business",
-  "Ideas": "Creative",
-  "Thoughts": "Creative",
-};
-
-// Migrate a single idea's category if needed
-function migrateIdeaCategory(idea) {
-  if (idea.category && CATEGORY_MIGRATIONS[idea.category]) {
-    return { ...idea, category: CATEGORY_MIGRATIONS[idea.category] };
-  }
-  return idea;
-}
-
-// Helper to get stored ideas (with automatic migration)
-async function getStoredIdeas() {
+// Helper to get stored ideas from Firestore
+export async function getStoredIdeas() {
   try {
-    const stored = await AsyncStorage.getItem(STORAGE_KEY);
-    if (!stored) return [];
-
-    let ideas = JSON.parse(stored);
-
-    // Check if migration needed
-    const needsMigration = ideas.some(
-      (idea) => idea.category && CATEGORY_MIGRATIONS[idea.category]
-    );
-
-    if (needsMigration) {
-      console.log("Migrating idea categories...");
-      ideas = ideas.map(migrateIdeaCategory);
-      // Save migrated data
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(ideas));
-      console.log("Category migration complete");
-    }
-
-    return ideas;
+    const ideas = await firestoreGetIdeas();
+    // Transform Firestore format to app format
+    return ideas.map((idea) => ({
+      ...idea,
+      created_at: idea.createdAt?.toDate?.()?.toISOString() || idea.created_at || new Date().toISOString(),
+      updated_at: idea.updatedAt?.toDate?.()?.toISOString() || idea.updated_at,
+    }));
   } catch (e) {
-    console.error("Error reading stored ideas:", e);
+    console.error("Error reading ideas from Firestore:", e);
     return [];
-  }
-}
-
-// Helper to save ideas
-async function saveStoredIdeas(ideas) {
-  try {
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(ideas));
-  } catch (e) {
-    console.error("Error saving ideas:", e);
-    throw e;
   }
 }
 
@@ -71,9 +38,8 @@ export function useCreateIdea(onSuccess) {
       source_type,
       source_url
     }) => {
-      // Create new idea object using AI-processed data if available
-      const newIdea = {
-        id: `user-${Date.now()}`,
+      // Create idea object for Firestore
+      const ideaData = {
         title: title || content.split(/[.!?]/)[0].substring(0, 50),
         content: content,
         summary: summary || content.substring(0, 150),
@@ -81,16 +47,17 @@ export function useCreateIdea(onSuccess) {
         source_type: source_type || "text",
         source_url: source_url || null,
         tags: tags || [],
-        created_at: new Date().toISOString(),
         view_count: 0,
       };
 
-      // Get existing ideas and add new one
-      const existingIdeas = await getStoredIdeas();
-      const updatedIdeas = [newIdea, ...existingIdeas];
-      await saveStoredIdeas(updatedIdeas);
+      // Save to Firestore and get the document ID
+      const docId = await firestoreAddIdea(ideaData);
 
-      return newIdea;
+      return {
+        id: docId,
+        ...ideaData,
+        created_at: new Date().toISOString(),
+      };
     },
     onSuccess: (newIdea) => {
       // Invalidate queries to refresh the list
@@ -114,23 +81,14 @@ export function useUpdateIdea(onSuccess) {
 
   return useMutation({
     mutationFn: async ({ id, updates }) => {
-      const existingIdeas = await getStoredIdeas();
-      const index = existingIdeas.findIndex((idea) => idea.id === id);
+      // Update in Firestore
+      await firestoreUpdateIdea(id, updates);
 
-      if (index === -1) {
-        throw new Error("Idea not found");
-      }
-
-      const updatedIdea = {
-        ...existingIdeas[index],
+      return {
+        id,
         ...updates,
         updated_at: new Date().toISOString(),
       };
-
-      existingIdeas[index] = updatedIdea;
-      await saveStoredIdeas(existingIdeas);
-
-      return updatedIdea;
     },
     onSuccess: (updatedIdea) => {
       queryClient.invalidateQueries({ queryKey: ["ideas"] });
@@ -154,9 +112,8 @@ export function useDeleteIdea(onSuccess) {
 
   return useMutation({
     mutationFn: async (id) => {
-      const existingIdeas = await getStoredIdeas();
-      const filteredIdeas = existingIdeas.filter((idea) => idea.id !== id);
-      await saveStoredIdeas(filteredIdeas);
+      // Delete from Firestore
+      await firestoreDeleteIdea(id);
       return id;
     },
     onSuccess: (deletedId) => {
@@ -174,5 +131,3 @@ export function useDeleteIdea(onSuccess) {
   });
 }
 
-// Export helpers for use in other components
-export { getStoredIdeas, saveStoredIdeas, STORAGE_KEY };

@@ -6,7 +6,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { AppText } from "@/components/primitives";
 import * as Haptics from "expo-haptics";
 
-export function HomeHeader({ insets, searchQuery, onSearchChange, activeTag, onClearTag }) {
+export function HomeHeader({ insets, searchQuery, onSearchChange, activeTag, onClearTag, searchBarRef }) {
   const { theme } = useTheme();
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const searchInputRef = useRef(null);
@@ -39,6 +39,8 @@ export function HomeHeader({ insets, searchQuery, onSearchChange, activeTag, onC
       >
         {/* Search Bar - full width */}
         <View
+          ref={searchBarRef}
+          collapsable={false}
           style={{
             flex: 1,
             flexDirection: "row",

@@ -30,21 +30,26 @@ import Animated, {
 
 import { useTheme, categoryColors } from "@/contexts/ThemeContext";
 import { useFirebaseAuth } from "@/contexts/AuthContext";
+import { useTutorial } from "@/contexts/TutorialContext";
 import { useIdeas } from "@/hooks/useIdeas";
 import { useCategories } from "@/hooks/useCategories";
 import { getStoredIdeas } from "@/hooks/useCreateIdea";
 import { UnifiedInputModal } from "@/components/Modals/UnifiedInputModal";
 import { LinkModal } from "@/components/Modals/LinkModal";
 import { AppScreen, AppText } from "@/components/primitives";
-import { sampleIdeas, sampleTasks, categories as defaultCategories } from "@/data/sampleData";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { SpotlightTutorial } from "@/components/Tutorial/SpotlightTutorial";
+import { categories as defaultCategories } from "@/data/sampleData";
+import {
+  getTasks as firestoreGetTasks,
+  addTask as firestoreAddTask,
+  updateTask as firestoreUpdateTask,
+  deleteTask as firestoreDeleteTask,
+} from "@/services/firestore";
 import { HomeHeader } from "@/components/HomePage/HomeHeader";
 import { QuickInputButtons } from "@/components/QuickInput/QuickInputButtons";
 import { CategoryFilter } from "@/components/HomePage/CategoryFilter";
 import { IdeasSheet } from "@/components/Sheets/IdeasSheet";
 import { TasksSheet } from "@/components/Sheets/TasksSheet";
-
-const TASKS_STORAGE_KEY = "@spillstack_tasks";
 
 // Animated Task Item Component
 const AnimatedTaskItem = memo(function AnimatedTaskItem({
@@ -157,21 +162,28 @@ const AnimatedTaskItem = memo(function AnimatedTaskItem({
   );
 });
 
-// Save tasks to storage
-const saveTasks = async (newTasks) => {
-  try {
-    await AsyncStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(newTasks));
-  } catch (error) {
-    console.error("Error saving tasks:", error);
-  }
-};
 
 export default function HomePage() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const { theme, isDark } = useTheme();
   const { user } = useFirebaseAuth();
+  const { registerTarget, showTutorial } = useTutorial();
   const { tag: tagParam, category: categoryParam, openIdeasSheet: openIdeasSheetParam } = useLocalSearchParams();
+
+  // Tutorial target refs
+  const quickInputRef = useRef(null);
+  const thoughtsRef = useRef(null);
+  const tasksRef = useRef(null);
+  const searchRef = useRef(null);
+
+  // Register tutorial targets
+  useEffect(() => {
+    registerTarget("quick-input", quickInputRef);
+    registerTarget("thoughts", thoughtsRef);
+    registerTarget("tasks", tasksRef);
+    registerTarget("search", searchRef);
+  }, [registerTarget]);
 
   // State
   const [searchQuery, setSearchQuery] = useState("");
@@ -222,22 +234,28 @@ export default function HomePage() {
   });
   const { data: apiCategories = [] } = useCategories();
 
-  // Fetch tasks
+  // Fetch tasks from Firestore
   const { data: localTasks = [] } = useQuery({
     queryKey: ["localTasks"],
     queryFn: async () => {
       try {
-        const stored = await AsyncStorage.getItem(TASKS_STORAGE_KEY);
-        return stored ? JSON.parse(stored) : sampleTasks;
-      } catch {
-        return sampleTasks;
+        const tasks = await firestoreGetTasks();
+        // Transform Firestore format to app format
+        const transformedTasks = tasks.map((task) => ({
+          ...task,
+          created_at: task.createdAt?.toDate?.()?.toISOString() || task.created_at || new Date().toISOString(),
+        }));
+        // If no tasks in Firestore, return empty (no sample tasks for real users)
+        return transformedTasks;
+      } catch (error) {
+        console.error("Error fetching tasks:", error);
+        return [];
       }
     },
   });
 
-  // Combine ideas
-  const allIdeas = [...localIdeas, ...sampleIdeas];
-  const ideas = apiIdeas.length > 0 ? apiIdeas : allIdeas;
+  // Use ideas from Firestore (localIdeas now comes from Firestore)
+  const ideas = localIdeas;
   const tasks = localTasks;
   const baseCategories = apiCategories.length > 0 ? apiCategories : defaultCategories;
 
@@ -301,16 +319,12 @@ export default function HomePage() {
 
     if (task && !task.completed) {
       setRemovingTasks((prev) => new Set([...prev, taskId]));
-      const newTasks = tasks.map((t) =>
-        t.id === taskId ? { ...t, completed: true } : t
-      );
-      await saveTasks(newTasks);
+      // Update in Firestore
+      await firestoreUpdateTask(taskId, { completed: true });
       queryClient.invalidateQueries({ queryKey: ["localTasks"] });
     } else {
-      const newTasks = tasks.map((t) =>
-        t.id === taskId ? { ...t, completed: !t.completed } : t
-      );
-      await saveTasks(newTasks);
+      // Toggle completion in Firestore
+      await firestoreUpdateTask(taskId, { completed: !task?.completed });
       queryClient.invalidateQueries({ queryKey: ["localTasks"] });
     }
   };
@@ -350,7 +364,7 @@ export default function HomePage() {
   };
 
   // Section Header Component - simple text row, no container
-  const SectionHeader = ({ title, onSeeAll, isFirst, count }) => {
+  const SectionHeader = ({ title, onSeeAll, isFirst, count, tutorialRef }) => {
     const content = (
       <View
         style={{
@@ -407,13 +421,19 @@ export default function HomePage() {
 
     if (onSeeAll) {
       return (
-        <TouchableOpacity onPress={onSeeAll} activeOpacity={0.6} style={wrapperStyle}>
+        <TouchableOpacity
+          ref={tutorialRef}
+          collapsable={false}
+          onPress={onSeeAll}
+          activeOpacity={0.6}
+          style={wrapperStyle}
+        >
           {content}
         </TouchableOpacity>
       );
     }
 
-    return <View style={wrapperStyle}>{content}</View>;
+    return <View ref={tutorialRef} collapsable={false} style={wrapperStyle}>{content}</View>;
   };
 
   // Idea Card for horizontal scroll
@@ -534,14 +554,17 @@ export default function HomePage() {
         onSearchChange={setSearchQuery}
         activeTag={activeTag}
         onClearTag={() => setActiveTag(null)}
+        searchBarRef={searchRef}
       />
 
       {/* Quick Input Buttons - ONE TAP to Voice or Text (hide when searching) */}
       {!searchQuery && (
-        <QuickInputButtons
-          onVoice={() => setShowVoiceModal(true)}
-          onText={() => setShowTextModal(true)}
-        />
+        <View ref={quickInputRef} collapsable={false}>
+          <QuickInputButtons
+            onVoice={() => setShowVoiceModal(true)}
+            onText={() => setShowTextModal(true)}
+          />
+        </View>
       )}
 
       <ScrollView
@@ -574,6 +597,7 @@ export default function HomePage() {
               }}
               isFirst
               count={filteredIdeas.length}
+              tutorialRef={thoughtsRef}
             />
 
             {/* Category Filter */}
@@ -612,6 +636,7 @@ export default function HomePage() {
                     setShowTasksSheet(true);
                   }}
                   count={filteredTasks.filter(t => !t.completed).length}
+                  tutorialRef={tasksRef}
                 />
 
                 <View style={{ paddingHorizontal: theme.spacing.xl }}>
@@ -647,6 +672,9 @@ export default function HomePage() {
       {/* Full View Sheets */}
       <IdeasSheet visible={showIdeasSheet} onClose={() => setShowIdeasSheet(false)} initialCategory={ideasSheetCategory} />
       <TasksSheet visible={showTasksSheet} onClose={() => setShowTasksSheet(false)} />
+
+      {/* Spotlight Tutorial - only shows on first launch */}
+      <SpotlightTutorial />
     </AppScreen>
   );
 }

@@ -19,19 +19,20 @@ import {
   ChevronRight,
   Sparkles,
   LogOut,
+  PlayCircle,
 } from "lucide-react-native";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useFirebaseAuth } from "@/contexts/AuthContext";
+import { useTutorial } from "@/contexts/TutorialContext";
 import { AppScreen, AppText } from "@/components/primitives";
 import * as Haptics from "expo-haptics";
 import { toast } from "sonner-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { STORAGE_KEY } from "@/hooks/useCreateIdea";
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { theme, isDark, toggleTheme } = useTheme();
   const { signOut, user } = useFirebaseAuth();
+  const { resetTutorial } = useTutorial();
 
   const handleToggleTheme = () => {
     try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (e) {}
@@ -103,27 +104,12 @@ export default function SettingsScreen() {
         {
           icon: Trash2,
           title: "Clear All Data",
-          subtitle: "Permanently delete all ideas",
+          subtitle: "Permanently delete all ideas and tasks",
           type: "danger",
           onPress: () =>
             Alert.alert(
-              "Clear All Data",
-              "Are you sure you want to delete all your ideas? This cannot be undone.",
-              [
-                { text: "Cancel", style: "cancel" },
-                {
-                  text: "Delete",
-                  style: "destructive",
-                  onPress: async () => {
-                    try {
-                      await AsyncStorage.removeItem(STORAGE_KEY);
-                      toast.success("All data cleared");
-                    } catch (error) {
-                      toast.error("Failed to clear data");
-                    }
-                  },
-                },
-              ],
+              "Coming Soon",
+              "This feature will be available in a future update.",
             ),
         },
       ],
@@ -131,6 +117,17 @@ export default function SettingsScreen() {
     {
       title: "Support",
       items: [
+        {
+          icon: PlayCircle,
+          title: "Replay Tutorial",
+          subtitle: "See the app walkthrough again",
+          type: "action",
+          onPress: () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            resetTutorial();
+            toast.success("Tutorial will start on home screen");
+          },
+        },
         {
           icon: HelpCircle,
           title: "Help & FAQ",

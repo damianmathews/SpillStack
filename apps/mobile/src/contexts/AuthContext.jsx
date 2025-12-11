@@ -9,11 +9,16 @@ import {
   signInWithCredential,
 } from "firebase/auth";
 import * as AppleAuthentication from "expo-apple-authentication";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { doc, setDoc, getDoc, serverTimestamp, onSnapshot } from "firebase/firestore";
+import { getFunctions, httpsCallable } from "firebase/functions";
 import {
   GoogleSignin,
   statusCodes,
 } from "@react-native-google-signin/google-signin";
+
+// Get functions instance
+const functions = getFunctions();
 
 // Configure Google Sign-In at module load (this is what worked before)
 GoogleSignin.configure({
@@ -21,6 +26,29 @@ GoogleSignin.configure({
 });
 
 const AuthContext = createContext({});
+
+// Helper to create/update user document in Firestore
+const createUserDocument = async (user, isNewUser = false, marketingOptIn = false) => {
+  if (!user) return;
+
+  const userRef = doc(db, "users", user.uid);
+  const userSnap = await getDoc(userRef);
+
+  // Only create if document doesn't exist (new user)
+  if (!userSnap.exists()) {
+    await setDoc(userRef, {
+      email: user.email,
+      displayName: user.displayName || null,
+      photoURL: user.photoURL || null,
+      marketingOptIn: marketingOptIn,
+      createdAt: serverTimestamp(),
+      lastLoginAt: serverTimestamp(),
+    });
+  } else if (!isNewUser) {
+    // Update last login for existing users
+    await setDoc(userRef, { lastLoginAt: serverTimestamp() }, { merge: true });
+  }
+};
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -40,17 +68,95 @@ export function AuthProvider({ children }) {
       const result = await signInWithEmailAndPassword(auth, email, password);
       return { user: result.user, error: null };
     } catch (error) {
+      // Handle specific Firebase error codes with user-friendly messages
+      if (error.code === "auth/user-not-found" || error.code === "auth/invalid-credential") {
+        return { user: null, error: "No account found with this email. Please sign up instead." };
+      }
+      if (error.code === "auth/wrong-password") {
+        return { user: null, error: "Incorrect password. Please try again." };
+      }
+      if (error.code === "auth/invalid-email") {
+        return { user: null, error: "Please enter a valid email address." };
+      }
+      if (error.code === "auth/too-many-requests") {
+        return { user: null, error: "Too many failed attempts. Please try again later." };
+      }
       return { user: null, error: error.message };
     }
   };
 
-  const signUp = async (email, password) => {
+  const signUp = async (email, password, marketingOptIn = false) => {
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
-      return { user: result.user, error: null };
+      // Create user document in Firestore (triggers welcome email)
+      await createUserDocument(result.user, true, marketingOptIn);
+      // Send verification code via our custom Resend flow
+      try {
+        const sendVerificationCode = httpsCallable(functions, "sendVerificationCode");
+        await sendVerificationCode();
+      } catch (e) {
+        console.log("Failed to send verification code:", e);
+      }
+      return { user: result.user, error: null, isNewUser: true };
     } catch (error) {
-      return { user: null, error: error.message };
+      // Handle specific Firebase error codes with user-friendly messages
+      if (error.code === "auth/email-already-in-use") {
+        return { user: null, error: "An account with this email already exists. Please sign in instead.", isNewUser: false };
+      }
+      if (error.code === "auth/invalid-email") {
+        return { user: null, error: "Please enter a valid email address.", isNewUser: false };
+      }
+      if (error.code === "auth/weak-password") {
+        return { user: null, error: "Password is too weak. Please use at least 6 characters.", isNewUser: false };
+      }
+      return { user: null, error: error.message, isNewUser: false };
     }
+  };
+
+  // Send verification code email via Resend
+  const sendVerificationCode = async () => {
+    try {
+      const sendCode = httpsCallable(functions, "sendVerificationCode");
+      await sendCode();
+      return { error: null };
+    } catch (error) {
+      console.error("Failed to send verification code:", error);
+      return { error: error.message || "Failed to send verification code" };
+    }
+  };
+
+  // Verify the code entered by user
+  const verifyEmailCode = async (code) => {
+    try {
+      const verifyCode = httpsCallable(functions, "verifyEmailCode");
+      const result = await verifyCode({ code });
+      return { success: result.data.verified, error: null };
+    } catch (error) {
+      console.error("Failed to verify code:", error);
+      // Extract user-friendly message from Firebase error
+      const message = error.message || "Failed to verify code";
+      return { success: false, error: message };
+    }
+  };
+
+  // Check if user's email is verified (from Firestore, not Firebase Auth)
+  const checkEmailVerified = async () => {
+    if (!user) return false;
+    try {
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      if (userDoc.exists()) {
+        return userDoc.data().emailVerified === true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error checking verification status:", error);
+      return false;
+    }
+  };
+
+  // Legacy function kept for compatibility
+  const resendVerificationEmail = async () => {
+    return sendVerificationCode();
   };
 
   const signOut = async () => {
@@ -89,6 +195,9 @@ export function AuthProvider({ children }) {
       // Sign in to Firebase with the credential
       const result = await signInWithCredential(auth, googleCredential);
 
+      // Create user document if new (triggers welcome email for new users)
+      await createUserDocument(result.user);
+
       return { user: result.user, error: null };
     } catch (error) {
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
@@ -123,6 +232,10 @@ export function AuthProvider({ children }) {
       });
 
       const result = await signInWithCredential(auth, oauthCredential);
+
+      // Create user document if new (triggers welcome email for new users)
+      await createUserDocument(result.user);
+
       return { user: result.user, error: null };
     } catch (error) {
       if (error.code === "ERR_REQUEST_CANCELED") {
@@ -141,6 +254,10 @@ export function AuthProvider({ children }) {
     signOut,
     signInWithGoogle,
     signInWithApple,
+    resendVerificationEmail,
+    sendVerificationCode,
+    verifyEmailCode,
+    checkEmailVerified,
   };
 
   return (

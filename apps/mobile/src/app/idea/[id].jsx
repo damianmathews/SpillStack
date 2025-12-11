@@ -29,7 +29,7 @@ import {
 } from "lucide-react-native";
 import { useTheme, categoryColors } from "@/contexts/ThemeContext";
 import { useQuery } from "@tanstack/react-query";
-import { sampleIdeas, categories } from "@/data/sampleData";
+import { categories } from "@/data/sampleData";
 import { getStoredIdeas, useUpdateIdea, useDeleteIdea } from "@/hooks/useCreateIdea";
 import { findSimilarIdeas } from "@/services/ai";
 import { AppText } from "@/components/primitives";
@@ -53,23 +53,17 @@ export default function IdeaDetailScreen() {
   const [similarIdeaIds, setSimilarIdeaIds] = useState([]);
   const [loadingSimilar, setLoadingSimilar] = useState(false);
 
-  // Check if this is a sample idea first
-  const sampleIdea = sampleIdeas.find((idea) => idea.id === id);
-
   // Fetch user-created ideas from local storage
   const { data: localIdeas = [] } = useQuery({
     queryKey: ["localIdeas"],
     queryFn: getStoredIdeas,
   });
 
-  // Check if this is a user-created idea
-  const localIdea = localIdeas.find((idea) => idea.id === id);
-
-  // Priority: local user idea > sample idea
-  const idea = localIdea || sampleIdea;
+  // Find the idea by id
+  const idea = localIdeas.find((idea) => idea.id === id);
 
   // All ideas for similar lookup
-  const allIdeas = [...localIdeas, ...sampleIdeas];
+  const allIdeas = localIdeas;
 
   // Mutations
   const updateMutation = useUpdateIdea(() => {

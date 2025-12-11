@@ -49,6 +49,8 @@ export default function AuthScreen() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
@@ -64,19 +66,44 @@ export default function AuthScreen() {
       return;
     }
 
+    // For sign-up, validate confirm password
+    if (!isLogin) {
+      if (!confirmPassword) {
+        toast.error("Please confirm your password");
+        return;
+      }
+      if (password !== confirmPassword) {
+        toast.error("Passwords do not match");
+        return;
+      }
+    }
+
     setLoading(true);
 
-    const { user, error } = isLogin
-      ? await signIn(email, password)
-      : await signUp(email, password);
+    try {
+      const { user, error } = isLogin
+        ? await signIn(email, password)
+        : await signUp(email, password, marketingOptIn);
 
-    setLoading(false);
+      setLoading(false);
 
-    if (error) {
-      toast.error(error);
-    } else if (user) {
-      toast.success(isLogin ? "Welcome back!" : "Account created!");
-      router.replace("/(tabs)");
+      if (error) {
+        toast.error(error);
+        return;
+      }
+
+      if (user) {
+        if (isLogin) {
+          toast.success("Welcome back!");
+          router.replace("/(tabs)");
+        } else {
+          // New sign-up: go to welcome/confirmation screen
+          router.replace({ pathname: "/welcome", params: { email } });
+        }
+      }
+    } catch (e) {
+      setLoading(false);
+      toast.error("Something went wrong. Please try again.");
     }
   };
 
@@ -137,8 +164,13 @@ export default function AuthScreen() {
                 resizeMode="contain"
               />
               <Text style={[theme.typography.body, { color: "#FFFFFF", marginTop: -45, fontStyle: "italic" }]}>
-                {isLogin ? "Welcome back" : "Create your account"}
+                {isLogin ? "Welcome back" : "Start your journey"}
               </Text>
+              {!isLogin && (
+                <Text style={styles.signUpBenefit}>
+                  Free account • Sync across devices • Never lose an idea
+                </Text>
+              )}
             </View>
 
             <View style={styles.form}>
@@ -212,18 +244,62 @@ export default function AuthScreen() {
                     color: "#F4F6FF",
                   },
                 ]}
-                placeholder="Password"
+                placeholder={isLogin ? "Password" : "Create password"}
                 placeholderTextColor="#818BA3"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
                 autoCapitalize="none"
+                textContentType="oneTimeCode"
+                autoComplete="off"
               />
+
+              {!isLogin && (
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: "#0C1220",
+                      borderColor: "#222B3D",
+                      color: "#F4F6FF",
+                    },
+                  ]}
+                  placeholder="Confirm password"
+                  placeholderTextColor="#818BA3"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry
+                  autoCapitalize="none"
+                  textContentType="oneTimeCode"
+                  autoComplete="off"
+                />
+              )}
+
+              {/* Marketing opt-in checkbox (sign-up only) */}
+              {!isLogin && (
+                <TouchableOpacity
+                  style={styles.checkboxRow}
+                  onPress={() => setMarketingOptIn(!marketingOptIn)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[
+                    styles.checkbox,
+                    marketingOptIn && styles.checkboxChecked
+                  ]}>
+                    {marketingOptIn && (
+                      <Text style={styles.checkmark}>✓</Text>
+                    )}
+                  </View>
+                  <Text style={styles.checkboxLabel}>
+                    Send me tips and product updates
+                  </Text>
+                </TouchableOpacity>
+              )}
 
               <TouchableOpacity
                 style={[
                   styles.button,
-                  { backgroundColor: "#22C55E" },
+                  { backgroundColor: isLogin ? "#4F7DFF" : "#22C55E" },
                   loading && styles.buttonDisabled,
                 ]}
                 onPress={handleSubmit}
@@ -233,14 +309,17 @@ export default function AuthScreen() {
                   <ActivityIndicator color="#fff" />
                 ) : (
                   <Text style={styles.buttonText}>
-                    {isLogin ? "Sign In" : "Create Account"}
+                    {isLogin ? "Sign In" : "Create Free Account"}
                   </Text>
                 )}
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.switchButton}
-                onPress={() => setIsLogin(!isLogin)}
+                onPress={() => {
+                  setIsLogin(!isLogin);
+                  setConfirmPassword("");
+                }}
               >
                 <Text style={[theme.typography.subhead, { color: "#B7C0D8" }]}>
                   {isLogin ? "Don't have an account? " : "Already have an account? "}
@@ -336,5 +415,41 @@ const styles = StyleSheet.create({
   switchButton: {
     alignItems: "center",
     marginTop: 16,
+  },
+  signUpBenefit: {
+    color: "#818BA3",
+    fontSize: 13,
+    marginTop: 8,
+    textAlign: "center",
+  },
+  checkboxRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 4,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: "#222B3D",
+    backgroundColor: "#0C1220",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  checkboxChecked: {
+    backgroundColor: "#22C55E",
+    borderColor: "#22C55E",
+  },
+  checkmark: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  checkboxLabel: {
+    color: "#B7C0D8",
+    fontSize: 14,
+    flex: 1,
   },
 });

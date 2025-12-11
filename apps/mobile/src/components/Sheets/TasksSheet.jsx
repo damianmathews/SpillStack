@@ -10,24 +10,17 @@ import {
   Keyboard,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { X, Search, Circle, Check, Trash2, ListTodo } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 
 import { useTheme } from "@/contexts/ThemeContext";
 import { AppText } from "@/components/primitives";
-import { sampleTasks } from "@/data/sampleData";
-
-const TASKS_STORAGE_KEY = "@spillstack_tasks";
-
-const saveTasks = async (newTasks) => {
-  try {
-    await AsyncStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(newTasks));
-  } catch (error) {
-    console.error("Error saving tasks:", error);
-  }
-};
+import {
+  getTasks as firestoreGetTasks,
+  updateTask as firestoreUpdateTask,
+  deleteTask as firestoreDeleteTask,
+} from "@/services/firestore";
 
 export function TasksSheet({ visible, onClose }) {
   const insets = useSafeAreaInsets();
@@ -37,15 +30,19 @@ export function TasksSheet({ visible, onClose }) {
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Fetch tasks
+  // Fetch tasks from Firestore
   const { data: tasks = [] } = useQuery({
     queryKey: ["localTasks"],
     queryFn: async () => {
       try {
-        const stored = await AsyncStorage.getItem(TASKS_STORAGE_KEY);
-        return stored ? JSON.parse(stored) : sampleTasks;
-      } catch {
-        return sampleTasks;
+        const tasks = await firestoreGetTasks();
+        return tasks.map((task) => ({
+          ...task,
+          created_at: task.createdAt?.toDate?.()?.toISOString() || task.created_at || new Date().toISOString(),
+        }));
+      } catch (error) {
+        console.error("Error fetching tasks:", error);
+        return [];
       }
     },
   });
@@ -58,10 +55,8 @@ export function TasksSheet({ visible, onClose }) {
 
   const toggleTask = async (taskId) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const newTasks = tasks.map((task) =>
-      task.id === taskId ? { ...task, completed: !task.completed } : task
-    );
-    await saveTasks(newTasks);
+    const task = tasks.find((t) => t.id === taskId);
+    await firestoreUpdateTask(taskId, { completed: !task?.completed });
     queryClient.invalidateQueries({ queryKey: ["localTasks"] });
   };
 
@@ -73,8 +68,7 @@ export function TasksSheet({ visible, onClose }) {
         text: "Delete",
         style: "destructive",
         onPress: async () => {
-          const newTasks = tasks.filter((task) => task.id !== taskId);
-          await saveTasks(newTasks);
+          await firestoreDeleteTask(taskId);
           queryClient.invalidateQueries({ queryKey: ["localTasks"] });
         },
       },

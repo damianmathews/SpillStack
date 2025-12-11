@@ -20,7 +20,7 @@ import { getStoredIdeas } from "@/hooks/useCreateIdea";
 import { CategoryFilter } from "@/components/HomePage/CategoryFilter";
 import { IdeaCard } from "@/components/HomePage/IdeaCard";
 import { AppText } from "@/components/primitives";
-import { sampleIdeas, categories as defaultCategories } from "@/data/sampleData";
+import { categories as defaultCategories } from "@/data/sampleData";
 
 export function IdeasSheet({ visible, onClose, initialCategory = "All" }) {
   const insets = useSafeAreaInsets();
@@ -48,9 +48,8 @@ export function IdeasSheet({ visible, onClose, initialCategory = "All" }) {
     queryFn: getStoredIdeas,
   });
 
-  // Combine local ideas + sample ideas
-  const allIdeas = [...localIdeas, ...sampleIdeas];
-  const ideas = apiIdeas.length > 0 ? apiIdeas : allIdeas;
+  // Use local ideas (no sample data)
+  const ideas = apiIdeas.length > 0 ? apiIdeas : localIdeas;
   const baseCategories = apiCategories.length > 0 ? apiCategories : defaultCategories;
 
   // Sort categories by idea count (most popular first)
