@@ -13,14 +13,14 @@ export const TUTORIAL_STEPS = [
     description: "Tap Voice to speak or Text to type. AI handles the rest.",
   },
   {
-    id: "thoughts",
+    id: "idea-card",
     title: "Your ideas live here",
-    description: "Everything you capture appears here. Tap 'See all' to browse.",
+    description: "Ideas are organized by category. Tap any card to see details.",
   },
   {
-    id: "tasks",
+    id: "task-item",
     title: "Tasks stay organized",
-    description: "Say 'Buy groceries' and it becomes a task automatically.",
+    description: "Say 'Buy milk' and it becomes a task. Tap the checkbox to complete.",
   },
   {
     id: "search",
@@ -28,6 +28,26 @@ export const TUTORIAL_STEPS = [
     description: "Search across all your thoughts and tasks instantly.",
   },
 ];
+
+// Sample content shown only during tutorial for new users
+export const TUTORIAL_SAMPLE_IDEA = {
+  id: "tutorial-sample-idea",
+  title: "Your ideas will appear here",
+  summary: "Capture thoughts by voice or text and they'll be organized automatically",
+  content: "This is a sample idea to show you how SpillStack works. Your real ideas will replace this once you start capturing them.",
+  category: "Ideas",
+  tags: ["sample"],
+  created_at: new Date().toISOString(),
+  isTutorialSample: true,
+};
+
+export const TUTORIAL_SAMPLE_TASK = {
+  id: "tutorial-sample-task",
+  title: "Your tasks will appear here",
+  completed: false,
+  created_at: new Date().toISOString(),
+  isTutorialSample: true,
+};
 
 export function TutorialProvider({ children }) {
   const { user } = useFirebaseAuth();
@@ -68,10 +88,11 @@ export function TutorialProvider({ children }) {
       const hasCompletedTutorial = completedUsers[user.uid] === true;
 
       if (!hasCompletedTutorial) {
-        // First time for this user - show tutorial after UI settles
+        // First time for this user - show tutorial after UI fully settles
+        // Use longer delay to ensure home screen is fully rendered and measured
         setTimeout(() => {
           setShowTutorial(true);
-        }, 1000);
+        }, 2000);
       }
 
       setIsReady(true);

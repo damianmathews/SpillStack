@@ -16,6 +16,7 @@ import * as Haptics from "expo-haptics";
 
 import { useTheme } from "@/contexts/ThemeContext";
 import { AppText } from "@/components/primitives";
+import { toast } from "sonner-native";
 import {
   getTasks as firestoreGetTasks,
   updateTask as firestoreUpdateTask,
@@ -56,8 +57,26 @@ export function TasksSheet({ visible, onClose }) {
   const toggleTask = async (taskId) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const task = tasks.find((t) => t.id === taskId);
-    await firestoreUpdateTask(taskId, { completed: !task?.completed });
+    const wasCompleted = task?.completed;
+
+    await firestoreUpdateTask(taskId, { completed: !wasCompleted });
     queryClient.invalidateQueries({ queryKey: ["localTasks"] });
+
+    // Show toast with undo when completing a task
+    if (!wasCompleted) {
+      toast("Task completed", {
+        action: {
+          label: "Undo",
+          onClick: () => {
+            firestoreUpdateTask(taskId, { completed: false }).then(() => {
+              queryClient.invalidateQueries({ queryKey: ["localTasks"] });
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            });
+          },
+        },
+        duration: 4000,
+      });
+    }
   };
 
   const deleteTask = (taskId) => {
@@ -349,7 +368,7 @@ export function TasksSheet({ visible, onClose }) {
             <TextInput
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholder=""
+              placeholder="Search your tasks"
               placeholderTextColor={theme.colors.text.muted}
               returnKeyType="search"
               onSubmitEditing={Keyboard.dismiss}

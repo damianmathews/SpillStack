@@ -44,9 +44,9 @@ export function QuickInputButtons({ onVoice, onText }) {
       <View style={{ flexDirection: "row", gap: 24 }}>
         <TouchableOpacity
           style={{
-            width: 48,
-            height: 48,
-            borderRadius: 24,
+            width: 55,
+            height: 55,
+            borderRadius: 28,
             backgroundColor: theme.colors.accent.primary,
             alignItems: "center",
             justifyContent: "center",
@@ -54,14 +54,14 @@ export function QuickInputButtons({ onVoice, onText }) {
           onPress={() => handlePress(onVoice)}
           activeOpacity={0.8}
         >
-          <Mic size={22} color="#FFFFFF" strokeWidth={2.5} />
+          <Mic size={25} color="#FFFFFF" strokeWidth={2.5} />
         </TouchableOpacity>
 
         <TouchableOpacity
           style={{
-            width: 48,
-            height: 48,
-            borderRadius: 24,
+            width: 55,
+            height: 55,
+            borderRadius: 28,
             backgroundColor: theme.colors.accent.primary,
             alignItems: "center",
             justifyContent: "center",
@@ -69,7 +69,7 @@ export function QuickInputButtons({ onVoice, onText }) {
           onPress={() => handlePress(onText)}
           activeOpacity={0.8}
         >
-          <Type size={22} color="#FFFFFF" strokeWidth={2.5} />
+          <Type size={25} color="#FFFFFF" strokeWidth={2.5} />
         </TouchableOpacity>
       </View>
     </View>

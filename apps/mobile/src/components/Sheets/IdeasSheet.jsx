@@ -7,10 +7,11 @@ import {
   RefreshControl,
   Keyboard,
   TextInput,
+  useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
-import { X, Search, Lightbulb } from "lucide-react-native";
+import { X, Search, Lightbulb, Archive } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 
 import { useTheme } from "@/contexts/ThemeContext";
@@ -26,10 +27,19 @@ export function IdeasSheet({ visible, onClose, initialCategory = "All" }) {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const { theme, isDark } = useTheme();
+  const { width } = useWindowDimensions();
 
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [searchQuery, setSearchQuery] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+
+  // Responsive column count: 2 for phones, 3-5 for tablets
+  const numColumns = useMemo(() => {
+    if (width >= 1024) return 5; // Large tablet landscape
+    if (width >= 768) return 4;  // iPad portrait / smaller tablet landscape
+    if (width >= 600) return 3;  // Large phone landscape / small tablet
+    return 2; // Phone portrait
+  }, [width]);
 
   // Update category when initialCategory changes (e.g., opening from idea detail)
   React.useEffect(() => {
@@ -52,30 +62,53 @@ export function IdeasSheet({ visible, onClose, initialCategory = "All" }) {
   const ideas = apiIdeas.length > 0 ? apiIdeas : localIdeas;
   const baseCategories = apiCategories.length > 0 ? apiCategories : defaultCategories;
 
+  // Count archived ideas
+  const archivedCount = useMemo(() => {
+    return ideas.filter((idea) => idea.archived).length;
+  }, [ideas]);
+
   // Sort categories by idea count (most popular first)
   const categories = useMemo(() => {
-    // Count ideas per category
+    // Count ideas per category (exclude archived)
     const categoryCounts = {};
     ideas.forEach((idea) => {
+      if (idea.archived) return; // Don't count archived ideas
       const cat = idea.category || "Uncategorized";
       categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
     });
 
     // Sort categories by count (descending), keeping "All" always first
-    return [...baseCategories].sort((a, b) => {
+    const sorted = [...baseCategories].sort((a, b) => {
       if (a.name === "All") return -1;
       if (b.name === "All") return 1;
       const countA = categoryCounts[a.name] || 0;
       const countB = categoryCounts[b.name] || 0;
       return countB - countA;
     });
-  }, [baseCategories, ideas]);
+
+    // Add "Archived" category at the end if there are archived ideas
+    if (archivedCount > 0) {
+      sorted.push({ name: "Archived", color: "#6B7280", icon: "archive" });
+    }
+
+    return sorted;
+  }, [baseCategories, ideas, archivedCount]);
 
   // Filter ideas
   const filteredIdeas = useMemo(() => {
     return ideas.filter((idea) => {
+      // Handle "Archived" category specially
+      if (selectedCategory === "Archived") {
+        if (!idea.archived) return false;
+      } else {
+        // Exclude archived ideas for all other categories
+        if (idea.archived) return false;
+      }
+
       const matchesCategory =
-        selectedCategory === "All" || idea.category === selectedCategory;
+        selectedCategory === "All" ||
+        selectedCategory === "Archived" ||
+        idea.category === selectedCategory;
       const query = searchQuery.toLowerCase();
       const matchesSearch =
         !searchQuery ||
@@ -103,39 +136,46 @@ export function IdeasSheet({ visible, onClose, initialCategory = "All" }) {
     onClose();
   };
 
-  const EmptyState = () => (
-    <View
-      style={{
-        flex: 1,
-        alignItems: "center",
-        justifyContent: "center",
-        paddingVertical: theme.spacing.xxl * 2,
-        paddingHorizontal: theme.spacing.xxl,
-      }}
-    >
+  const EmptyState = () => {
+    const isArchiveView = selectedCategory === "Archived";
+    const IconComponent = isArchiveView ? Archive : Lightbulb;
+
+    return (
       <View
         style={{
-          width: 80,
-          height: 80,
-          borderRadius: 40,
-          backgroundColor: theme.colors.surface.level1,
+          flex: 1,
           alignItems: "center",
           justifyContent: "center",
-          marginBottom: theme.spacing.xl,
+          paddingVertical: theme.spacing.xxl * 2,
+          paddingHorizontal: theme.spacing.xxl,
         }}
       >
-        <Lightbulb size={36} color={theme.colors.text.muted} strokeWidth={2} />
+        <View
+          style={{
+            width: 80,
+            height: 80,
+            borderRadius: 40,
+            backgroundColor: theme.colors.surface.level1,
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: theme.spacing.xl,
+          }}
+        >
+          <IconComponent size={36} color={theme.colors.text.muted} strokeWidth={2} />
+        </View>
+        <AppText variant="title" color="primary" style={{ marginBottom: theme.spacing.sm }}>
+          {isArchiveView ? "No archived thoughts" : "No thoughts found"}
+        </AppText>
+        <AppText variant="body" color="secondary" style={{ textAlign: "center" }}>
+          {searchQuery
+            ? `No thoughts match "${searchQuery}"`
+            : isArchiveView
+            ? "Archived thoughts will appear here"
+            : "Start capturing thoughts with Voice or Text!"}
+        </AppText>
       </View>
-      <AppText variant="title" color="primary" style={{ marginBottom: theme.spacing.sm }}>
-        No thoughts found
-      </AppText>
-      <AppText variant="body" color="secondary" style={{ textAlign: "center" }}>
-        {searchQuery
-          ? `No thoughts match "${searchQuery}"`
-          : "Start capturing thoughts with Voice or Text!"}
-      </AppText>
-    </View>
-  );
+    );
+  };
 
   return (
     <Modal
@@ -212,7 +252,7 @@ export function IdeasSheet({ visible, onClose, initialCategory = "All" }) {
             <TextInput
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholder=""
+              placeholder="Search your thoughts"
               placeholderTextColor={theme.colors.text.muted}
               returnKeyType="search"
               onSubmitEditing={Keyboard.dismiss}
@@ -246,16 +286,18 @@ export function IdeasSheet({ visible, onClose, initialCategory = "All" }) {
 
         {/* Ideas Grid */}
         <FlatList
+          key={`ideas-grid-${numColumns}`}
           data={filteredIdeas}
-          renderItem={({ item }) => <IdeaCard idea={item} />}
+          renderItem={({ item }) => <IdeaCard idea={item} numColumns={numColumns} onNavigate={handleClose} />}
           keyExtractor={(item) => item.id}
-          numColumns={2}
+          numColumns={numColumns}
           contentContainerStyle={{
             paddingHorizontal: theme.spacing.lg - 2,
             paddingBottom: insets.bottom + 20,
           }}
           columnWrapperStyle={{
             justifyContent: "space-between",
+            gap: theme.spacing.sm,
           }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"

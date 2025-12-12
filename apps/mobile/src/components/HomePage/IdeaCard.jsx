@@ -6,7 +6,7 @@ import { useTheme, categoryColors } from "@/contexts/ThemeContext";
 import { AppText, AppChip } from "@/components/primitives";
 import * as Haptics from "expo-haptics";
 
-export function IdeaCard({ idea }) {
+export function IdeaCard({ idea, onNavigate }) {
   const { theme } = useTheme();
 
   // Get category color with fallback
@@ -18,6 +18,10 @@ export function IdeaCard({ idea }) {
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // If onNavigate is provided (e.g., from a sheet), call it first to close the sheet
+    if (onNavigate) {
+      onNavigate();
+    }
     router.push(`/idea/${idea.id}`);
   };
 

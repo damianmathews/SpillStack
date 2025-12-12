@@ -27,8 +27,16 @@ import * as Haptics from "expo-haptics";
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const AnimatedRect = Animated.createAnimatedComponent(Rect);
 
-const SPOTLIGHT_PADDING = 12;
+const SPOTLIGHT_PADDING = 16;
 const TOOLTIP_WIDTH = SCREEN_WIDTH - 48;
+
+// Default fallback measurements for each tutorial step
+const FALLBACK_MEASUREMENTS = {
+  "quick-input": { width: SCREEN_WIDTH - 48, height: 52, y: 180 },
+  "thoughts": { width: 120, height: 28, y: 260 },
+  "tasks": { width: 100, height: 28, y: 480 },
+  "search": { width: SCREEN_WIDTH - 48, height: 44, y: 100 },
+};
 
 export function SpotlightTutorial() {
   const { theme } = useTheme();
@@ -52,26 +60,54 @@ export function SpotlightTutorial() {
   const spotlightScale = useSharedValue(1);
   const pulseOpacity = useSharedValue(0.3);
 
-  // Spotlight position and size
+  // Spotlight position and size - use reasonable defaults
   const spotlightX = useSharedValue(SCREEN_WIDTH / 2);
-  const spotlightY = useSharedValue(SCREEN_HEIGHT / 2);
-  const spotlightWidth = useSharedValue(100);
-  const spotlightHeight = useSharedValue(100);
+  const spotlightY = useSharedValue(SCREEN_HEIGHT / 3);
+  const spotlightWidth = useSharedValue(SCREEN_WIDTH - 48);
+  const spotlightHeight = useSharedValue(60);
 
-  // Get current target measurement
+  // Get current target measurement, with fallback
   const currentTargetId = TUTORIAL_STEPS[currentStep]?.id;
-  const currentTarget = targetMeasurements[currentTargetId];
+  const measuredTarget = targetMeasurements[currentTargetId];
+  const fallbackTarget = FALLBACK_MEASUREMENTS[currentTargetId];
+
+  // Use measured values if valid, otherwise use fallback
+  const currentTarget = React.useMemo(() => {
+    if (measuredTarget && measuredTarget.width > 10 && measuredTarget.height > 10) {
+      return measuredTarget;
+    }
+    if (fallbackTarget) {
+      return {
+        x: (SCREEN_WIDTH - fallbackTarget.width) / 2,
+        y: fallbackTarget.y,
+        width: fallbackTarget.width,
+        height: fallbackTarget.height,
+      };
+    }
+    return null;
+  }, [measuredTarget, fallbackTarget]);
 
   // Handle visibility
   useEffect(() => {
     if (showTutorial) {
       setIsVisible(true);
-      // Small delay to ensure measurements are ready
-      setTimeout(() => {
-        measureTargets();
-      }, 100);
+      // Multiple measurement attempts to ensure we get valid values
+      // First attempt immediately
+      measureTargets();
+      // Retry after short delay
+      const timer1 = setTimeout(() => measureTargets(), 100);
+      // Retry again for slow-rendering UI
+      const timer2 = setTimeout(() => measureTargets(), 300);
+      // Final retry
+      const timer3 = setTimeout(() => measureTargets(), 500);
+
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+        clearTimeout(timer3);
+      };
     }
-  }, [showTutorial]);
+  }, [showTutorial, measureTargets]);
 
   // Animate in when visible
   useEffect(() => {
@@ -207,10 +243,15 @@ export function SpotlightTutorial() {
       transparent
       animationType="none"
       statusBarTranslucent
+      onRequestClose={() => {}}  // Prevent back button dismissing on Android
     >
-      <View style={StyleSheet.absoluteFill}>
+      <TouchableOpacity
+        style={StyleSheet.absoluteFill}
+        activeOpacity={1}
+        onPress={handleNext}
+      >
         {/* Overlay with spotlight cutout */}
-        <Animated.View style={[StyleSheet.absoluteFill, overlayStyle]}>
+        <Animated.View style={[StyleSheet.absoluteFill, overlayStyle]} pointerEvents="none">
           <Svg width={SCREEN_WIDTH} height={SCREEN_HEIGHT}>
             <Defs>
               <Mask id="spotlight-mask">
@@ -320,7 +361,7 @@ export function SpotlightTutorial() {
             </TouchableOpacity>
           </View>
         </Animated.View>
-      </View>
+      </TouchableOpacity>
     </Modal>
   );
 }

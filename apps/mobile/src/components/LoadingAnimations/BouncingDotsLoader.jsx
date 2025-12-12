@@ -123,7 +123,7 @@ export function BouncingDotsLoader({ statusText }) {
         color="muted"
         style={styles.subMessage}
       >
-        This only takes a moment
+        This shouldn't take more than 10 seconds
       </AppText>
     </View>
   );

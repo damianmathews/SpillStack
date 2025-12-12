@@ -17,6 +17,7 @@ import {
   Sparkles,
   ChevronRight,
   Check,
+  Archive,
 } from "lucide-react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
@@ -30,7 +31,7 @@ import Animated, {
 
 import { useTheme, categoryColors } from "@/contexts/ThemeContext";
 import { useFirebaseAuth } from "@/contexts/AuthContext";
-import { useTutorial } from "@/contexts/TutorialContext";
+import { useTutorial, TUTORIAL_SAMPLE_IDEA, TUTORIAL_SAMPLE_TASK } from "@/contexts/TutorialContext";
 import { useIdeas } from "@/hooks/useIdeas";
 import { useCategories } from "@/hooks/useCategories";
 import { getStoredIdeas } from "@/hooks/useCreateIdea";
@@ -50,6 +51,7 @@ import { QuickInputButtons } from "@/components/QuickInput/QuickInputButtons";
 import { CategoryFilter } from "@/components/HomePage/CategoryFilter";
 import { IdeasSheet } from "@/components/Sheets/IdeasSheet";
 import { TasksSheet } from "@/components/Sheets/TasksSheet";
+import { toast } from "sonner-native";
 
 // Animated Task Item Component
 const AnimatedTaskItem = memo(function AnimatedTaskItem({
@@ -64,22 +66,41 @@ const AnimatedTaskItem = memo(function AnimatedTaskItem({
   const scale = useSharedValue(1);
   const checkScale = useSharedValue(task.completed ? 1 : 0);
   const hasStartedRemoving = useRef(false);
+  const removeTimerRef = useRef(null);
+  const isTutorialSample = task.isTutorialSample;
 
   useEffect(() => {
-    if (isRemoving && !hasStartedRemoving.current) {
+    if (isRemoving && !hasStartedRemoving.current && !isTutorialSample) {
       hasStartedRemoving.current = true;
       checkScale.value = withSpring(1, { damping: 12, stiffness: 200 });
 
-      const timer = setTimeout(() => {
+      removeTimerRef.current = setTimeout(() => {
         opacity.value = withTiming(0, { duration: 250 }, () => {
           runOnJS(onRemoveComplete)(task.id);
         });
         scale.value = withTiming(0.95, { duration: 250 });
       }, 2000);
-
-      return () => clearTimeout(timer);
+    } else if (!isRemoving && hasStartedRemoving.current) {
+      // Undo was clicked - reset everything
+      if (removeTimerRef.current) {
+        clearTimeout(removeTimerRef.current);
+        removeTimerRef.current = null;
+      }
+      hasStartedRemoving.current = false;
+      opacity.value = withTiming(1, { duration: 150 });
+      scale.value = withTiming(1, { duration: 150 });
+      checkScale.value = withTiming(0, { duration: 150 });
     }
-  }, [isRemoving]);
+  }, [isRemoving, isTutorialSample]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (removeTimerRef.current) {
+        clearTimeout(removeTimerRef.current);
+      }
+    };
+  }, []);
 
   const containerStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
@@ -93,24 +114,25 @@ const AnimatedTaskItem = memo(function AnimatedTaskItem({
   const isChecked = task.completed || isRemoving;
 
   return (
-    <Animated.View style={[containerStyle, { marginBottom: 8 }]}>
+    <Animated.View style={[containerStyle, { marginBottom: 8, opacity: isTutorialSample ? 0.85 : 1 }]}>
       <View
         style={{
           flexDirection: "row",
           alignItems: "center",
           backgroundColor: theme.colors.surface.level1,
           borderRadius: theme.radius.md,
-          borderWidth: 1,
-          borderColor: theme.colors.border.subtle,
+          borderWidth: isTutorialSample ? 1.5 : 1,
+          borderColor: isTutorialSample ? theme.colors.accent.primary + "40" : theme.colors.border.subtle,
+          borderStyle: isTutorialSample ? "dashed" : "solid",
           paddingVertical: 12,
           paddingHorizontal: theme.spacing.md,
         }}
       >
         <TouchableOpacity
-          onPress={() => onToggle(task.id)}
+          onPress={() => !isTutorialSample && onToggle(task.id)}
           style={{ marginRight: theme.spacing.md }}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          disabled={isRemoving}
+          disabled={isRemoving || isTutorialSample}
         >
           {isChecked ? (
             <Animated.View
@@ -135,7 +157,7 @@ const AnimatedTaskItem = memo(function AnimatedTaskItem({
                 height: 18,
                 borderRadius: 4,
                 borderWidth: 1.5,
-                borderColor: theme.colors.text.muted,
+                borderColor: isTutorialSample ? theme.colors.accent.primary + "60" : theme.colors.text.muted,
               }}
             />
           )}
@@ -149,12 +171,13 @@ const AnimatedTaskItem = memo(function AnimatedTaskItem({
               textDecorationLine: isChecked ? "line-through" : "none",
               opacity: isChecked ? 0.6 : 1,
               fontSize: 15,
+              fontStyle: isTutorialSample ? "italic" : "normal",
             }}
           >
             {task.title}
           </AppText>
         </View>
-        <AppText style={{ fontSize: 12, color: theme.colors.text.muted, flexShrink: 0 }}>
+        <AppText style={{ fontSize: 12, color: theme.colors.text.muted, flexShrink: 0, fontStyle: isTutorialSample ? "italic" : "normal" }}>
           {formatDate(task.created_at)}
         </AppText>
       </View>
@@ -173,15 +196,15 @@ export default function HomePage() {
 
   // Tutorial target refs
   const quickInputRef = useRef(null);
-  const thoughtsRef = useRef(null);
-  const tasksRef = useRef(null);
+  const ideaCardRef = useRef(null);
+  const taskItemRef = useRef(null);
   const searchRef = useRef(null);
 
   // Register tutorial targets
   useEffect(() => {
     registerTarget("quick-input", quickInputRef);
-    registerTarget("thoughts", thoughtsRef);
-    registerTarget("tasks", tasksRef);
+    registerTarget("idea-card", ideaCardRef);
+    registerTarget("task-item", taskItemRef);
     registerTarget("search", searchRef);
   }, [registerTarget]);
 
@@ -255,15 +278,32 @@ export default function HomePage() {
   });
 
   // Use ideas from Firestore (localIdeas now comes from Firestore)
-  const ideas = localIdeas;
-  const tasks = localTasks;
+  // During tutorial, show sample content if user has no real content
+  const hasRealIdeas = localIdeas.length > 0;
+  const hasRealTasks = localTasks.length > 0;
+
+  const ideas = React.useMemo(() => {
+    if (showTutorial && !hasRealIdeas) {
+      return [TUTORIAL_SAMPLE_IDEA];
+    }
+    return localIdeas;
+  }, [showTutorial, hasRealIdeas, localIdeas]);
+
+  const tasks = React.useMemo(() => {
+    if (showTutorial && !hasRealTasks) {
+      return [TUTORIAL_SAMPLE_TASK];
+    }
+    return localTasks;
+  }, [showTutorial, hasRealTasks, localTasks]);
+
   const baseCategories = apiCategories.length > 0 ? apiCategories : defaultCategories;
 
   // Sort categories by idea count (most popular first)
   const categories = React.useMemo(() => {
-    // Count ideas per category
+    // Count ideas per category (exclude archived)
     const categoryCounts = {};
     ideas.forEach((idea) => {
+      if (idea.archived) return; // Don't count archived ideas
       const cat = idea.category || "Uncategorized";
       categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
     });
@@ -278,8 +318,15 @@ export default function HomePage() {
     });
   }, [baseCategories, ideas]);
 
-  // Filter ideas by search, tag, and category
+  // Count archived ideas
+  const archivedCount = React.useMemo(() => {
+    return ideas.filter((idea) => idea.archived).length;
+  }, [ideas]);
+
+  // Filter ideas by search, tag, and category (exclude archived)
   const filteredIdeas = ideas.filter((idea) => {
+    // Exclude archived ideas
+    if (idea.archived) return false;
     // Filter by active tag
     if (activeTag && !idea.tags?.some((t) => t.toLowerCase() === activeTag.toLowerCase())) {
       return false;
@@ -322,6 +369,27 @@ export default function HomePage() {
       // Update in Firestore
       await firestoreUpdateTask(taskId, { completed: true });
       queryClient.invalidateQueries({ queryKey: ["localTasks"] });
+
+      // Show toast with undo option
+      toast("Task completed", {
+        action: {
+          label: "Undo",
+          onClick: () => {
+            // Remove from removingTasks set first
+            setRemovingTasks((prev) => {
+              const next = new Set(prev);
+              next.delete(taskId);
+              return next;
+            });
+            // Then undo in Firestore
+            firestoreUpdateTask(taskId, { completed: false }).then(() => {
+              queryClient.invalidateQueries({ queryKey: ["localTasks"] });
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            });
+          },
+        },
+        duration: 4000,
+      });
     } else {
       // Toggle completion in Firestore
       await firestoreUpdateTask(taskId, { completed: !task?.completed });
@@ -364,7 +432,7 @@ export default function HomePage() {
   };
 
   // Section Header Component - simple text row, no container
-  const SectionHeader = ({ title, onSeeAll, isFirst, count, tutorialRef }) => {
+  const SectionHeader = ({ title, onSeeAll, isFirst, count }) => {
     const content = (
       <View
         style={{
@@ -422,8 +490,6 @@ export default function HomePage() {
     if (onSeeAll) {
       return (
         <TouchableOpacity
-          ref={tutorialRef}
-          collapsable={false}
           onPress={onSeeAll}
           activeOpacity={0.6}
           style={wrapperStyle}
@@ -433,29 +499,33 @@ export default function HomePage() {
       );
     }
 
-    return <View ref={tutorialRef} collapsable={false} style={wrapperStyle}>{content}</View>;
+    return <View style={wrapperStyle}>{content}</View>;
   };
 
   // Idea Card for horizontal scroll
   const RecentIdeaCard = ({ idea }) => {
     const previewText = idea.summary || idea.content || "";
     const categoryColor = categoryColors[idea.category] || theme.colors.accent.primary;
+    const isTutorialSample = idea.isTutorialSample;
 
     return (
       <TouchableOpacity
-        onPress={() => handleIdeaPress(idea)}
+        onPress={() => !isTutorialSample && handleIdeaPress(idea)}
+        disabled={isTutorialSample}
         style={{
           width: 180,
           height: 160,
           backgroundColor: theme.colors.surface.level1,
           borderRadius: theme.radius.lg,
-          borderWidth: 1,
-          borderColor: theme.colors.border.subtle,
+          borderWidth: isTutorialSample ? 1.5 : 1,
+          borderColor: isTutorialSample ? theme.colors.accent.primary + "40" : theme.colors.border.subtle,
+          borderStyle: isTutorialSample ? "dashed" : "solid",
           padding: theme.spacing.md,
           marginRight: theme.spacing.md,
           overflow: "hidden",
+          opacity: isTutorialSample ? 0.85 : 1,
         }}
-        activeOpacity={0.7}
+        activeOpacity={isTutorialSample ? 1 : 0.7}
       >
         <View
           style={{
@@ -475,6 +545,7 @@ export default function HomePage() {
               letterSpacing: 0.5,
               fontWeight: "500",
               fontSize: 10,
+              fontStyle: isTutorialSample ? "italic" : "normal",
             }}
           >
             {idea.category}
@@ -484,7 +555,11 @@ export default function HomePage() {
           variant="subtitle"
           color="primary"
           numberOfLines={2}
-          style={{ marginBottom: theme.spacing.xs, fontSize: 14 }}
+          style={{
+            marginBottom: theme.spacing.xs,
+            fontSize: 14,
+            fontStyle: isTutorialSample ? "italic" : "normal",
+          }}
         >
           {idea.title}
         </AppText>
@@ -493,7 +568,11 @@ export default function HomePage() {
             variant="caption"
             color="muted"
             numberOfLines={2}
-            style={{ fontSize: 11, lineHeight: 15 }}
+            style={{
+              fontSize: 11,
+              lineHeight: 15,
+              fontStyle: isTutorialSample ? "italic" : "normal",
+            }}
           >
             {previewText}
           </AppText>
@@ -537,6 +616,34 @@ export default function HomePage() {
       <AppText variant="body" color="secondary" style={{ textAlign: "center" }}>
         Tap Voice or Text above to capture your first idea!
       </AppText>
+
+      {/* Show archived link if there are archived ideas */}
+      {archivedCount > 0 && (
+        <TouchableOpacity
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setIdeasSheetCategory("Archived");
+            setShowIdeasSheet(true);
+          }}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: theme.spacing.sm,
+            marginTop: theme.spacing.xl,
+            paddingVertical: theme.spacing.md,
+            paddingHorizontal: theme.spacing.lg,
+            backgroundColor: theme.colors.surface.level1,
+            borderRadius: theme.radius.md,
+            borderWidth: 1,
+            borderColor: theme.colors.border.subtle,
+          }}
+        >
+          <Archive size={16} color={theme.colors.text.secondary} />
+          <AppText variant="body" color="secondary">
+            View {archivedCount} archived {archivedCount === 1 ? "thought" : "thoughts"}
+          </AppText>
+        </TouchableOpacity>
+      )}
     </View>
   );
 
@@ -597,7 +704,6 @@ export default function HomePage() {
               }}
               isFirst
               count={filteredIdeas.length}
-              tutorialRef={thoughtsRef}
             />
 
             {/* Category Filter */}
@@ -614,8 +720,14 @@ export default function HomePage() {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={{ paddingHorizontal: theme.spacing.xl }}
               >
-                {recentIdeas.map((idea) => (
-                  <RecentIdeaCard key={idea.id} idea={idea} />
+                {recentIdeas.map((idea, index) => (
+                  index === 0 ? (
+                    <View key={idea.id} ref={ideaCardRef} collapsable={false}>
+                      <RecentIdeaCard idea={idea} />
+                    </View>
+                  ) : (
+                    <RecentIdeaCard key={idea.id} idea={idea} />
+                  )
                 ))}
               </ScrollView>
             ) : (
@@ -636,21 +748,33 @@ export default function HomePage() {
                     setShowTasksSheet(true);
                   }}
                   count={filteredTasks.filter(t => !t.completed).length}
-                  tutorialRef={tasksRef}
                 />
 
                 <View style={{ paddingHorizontal: theme.spacing.xl }}>
                   {pendingTasks.length > 0 ? (
-                    pendingTasks.map((task) => (
-                      <AnimatedTaskItem
-                        key={task.id}
-                        task={task}
-                        onToggle={toggleTask}
-                        formatDate={formatDate}
-                        isRemoving={removingTasks.has(task.id)}
-                        onRemoveComplete={finishRemovingTask}
-                        theme={theme}
-                      />
+                    pendingTasks.map((task, index) => (
+                      index === 0 ? (
+                        <View key={task.id} ref={taskItemRef} collapsable={false}>
+                          <AnimatedTaskItem
+                            task={task}
+                            onToggle={toggleTask}
+                            formatDate={formatDate}
+                            isRemoving={removingTasks.has(task.id)}
+                            onRemoveComplete={finishRemovingTask}
+                            theme={theme}
+                          />
+                        </View>
+                      ) : (
+                        <AnimatedTaskItem
+                          key={task.id}
+                          task={task}
+                          onToggle={toggleTask}
+                          formatDate={formatDate}
+                          isRemoving={removingTasks.has(task.id)}
+                          onRemoveComplete={finishRemovingTask}
+                          theme={theme}
+                        />
+                      )
                     ))
                   ) : (
                     <AppText variant="body" color="muted" style={{ textAlign: "center", paddingVertical: theme.spacing.md }}>

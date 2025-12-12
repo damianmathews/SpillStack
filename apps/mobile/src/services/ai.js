@@ -322,7 +322,7 @@ export async function generateTitle(content) {
 }
 
 /**
- * Find similar ideas based on content comparison
+ * Find related ideas based on loose connections (category, tags, themes)
  */
 export async function findSimilarIdeas(currentIdea, allIdeas) {
   // Filter out the current idea
@@ -334,29 +334,35 @@ export async function findSimilarIdeas(currentIdea, allIdeas) {
 
   // Create a prompt with the current idea and list of other ideas
   const otherIdeasText = otherIdeas
-    .map((idea, i) => `${i + 1}. [${idea.id}] ${idea.title}: ${idea.summary || idea.content.substring(0, 100)}`)
+    .map((idea, i) => `${i + 1}. [${idea.id}] (${idea.category}) ${idea.title}: ${idea.summary || idea.content?.substring(0, 100) || ""}`)
     .join("\n");
 
-  const prompt = `You are an expert at finding thematic connections between ideas.
-
-Given the CURRENT IDEA and a LIST OF OTHER IDEAS, identify which ideas are most similar or related.
+  const prompt = `You find loosely related ideas to help users discover connections in their thoughts.
 
 CURRENT IDEA:
 Title: ${currentIdea.title}
-Content: ${currentIdea.content}
 Category: ${currentIdea.category}
+Tags: ${(currentIdea.tags || []).join(", ") || "none"}
+Content: ${currentIdea.content?.substring(0, 200) || ""}
 
-LIST OF OTHER IDEAS:
+OTHER IDEAS:
 ${otherIdeasText}
 
-Return ONLY a JSON array of the IDs of the most similar ideas (max 3), ordered by relevance.
-Example: ["sample-1", "sample-3"]
+Find ideas that are LOOSELY related. Be generous! Include ideas that:
+- Share the same category
+- Have overlapping themes or topics
+- Could inspire or complement each other
+- Mention similar subjects, even tangentially
+- A user might want to reference together
 
-If no ideas are similar, return an empty array: []
-Return ONLY the JSON array, nothing else.`;
+The goal is to help users see connections they might have missed. Don't be too strict.
+
+Return a JSON array of up to 3 related idea IDs, most relevant first.
+Example: ["id-1", "id-2"]
+If truly nothing is related, return: []`;
 
   try {
-    const response = await callOpenAI(prompt, "", { maxTokens: 100 });
+    const response = await callOpenAI(prompt, "", { maxTokens: 100, temperature: 0.5 });
     // Parse the JSON array
     const parsed = JSON.parse(response.trim());
     if (Array.isArray(parsed)) {
@@ -364,8 +370,15 @@ Return ONLY the JSON array, nothing else.`;
     }
     return [];
   } catch (e) {
-    console.warn("Similar ideas lookup failed:", e.message);
-    return [];
+    console.warn("Related ideas lookup failed:", e.message);
+
+    // Fallback: return ideas in the same category
+    const sameCategoryIdeas = otherIdeas
+      .filter((idea) => idea.category === currentIdea.category)
+      .slice(0, 3)
+      .map((idea) => idea.id);
+
+    return sameCategoryIdeas;
   }
 }
 

@@ -131,3 +131,29 @@ export function useDeleteIdea(onSuccess) {
   });
 }
 
+// Hook for archiving/unarchiving an idea
+export function useArchiveIdea(onSuccess) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, archived }) => {
+      // Update archived status in Firestore
+      await firestoreUpdateIdea(id, { archived });
+      return { id, archived };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      queryClient.invalidateQueries({ queryKey: ["localIdeas"] });
+      queryClient.invalidateQueries({ queryKey: ["idea", result.id] });
+
+      if (onSuccess) {
+        onSuccess(result);
+      }
+    },
+    onError: (error) => {
+      console.error("Archive idea error:", error);
+      Alert.alert("Error", "Failed to archive idea. Please try again.");
+    },
+  });
+}
+

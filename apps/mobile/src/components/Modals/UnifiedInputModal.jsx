@@ -46,6 +46,7 @@ import * as Haptics from "expo-haptics";
 import { BouncingDotsLoader } from "@/components/LoadingAnimations/BouncingDotsLoader";
 import { useQueryClient } from "@tanstack/react-query";
 import { addTask as firestoreAddTask } from "@/services/firestore";
+import { toast } from "sonner-native";
 
 export function UnifiedInputModal({ visible, mode = "text", onClose }) {
   const { theme, isDark } = useTheme();
@@ -70,6 +71,24 @@ export function UnifiedInputModal({ visible, mode = "text", onClose }) {
   const [isReprocessing, setIsReprocessing] = useState(false);
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const dropdownAnim = useRef(new Animated.Value(0)).current;
+
+  // Editable fields for preview
+  const [editedTitle, setEditedTitle] = useState("");
+  const [editedSummary, setEditedSummary] = useState("");
+  const [editedTasks, setEditedTasks] = useState([]);
+
+  // Initialize edited fields when processedResult changes
+  useEffect(() => {
+    if (processedResult) {
+      if (processedResult.type === "idea") {
+        setEditedTitle(processedResult.data.title || "");
+        setEditedSummary(processedResult.data.summary || "");
+      } else if (processedResult.type === "task") {
+        const tasks = processedResult.data.tasks || [processedResult.rawContent];
+        setEditedTasks(tasks.map(t => t || ""));
+      }
+    }
+  }, [processedResult]);
 
   // Category icons mapping
   const categoryIcons = {
@@ -188,6 +207,9 @@ export function UnifiedInputModal({ visible, mode = "text", onClose }) {
     setIsReprocessing(false);
     setShowTypeDropdown(false);
     dropdownAnim.setValue(0);
+    setEditedTitle("");
+    setEditedSummary("");
+    setEditedTasks([]);
   };
 
   const handleTextChange = (value) => {
@@ -408,8 +430,10 @@ export function UnifiedInputModal({ visible, mode = "text", onClose }) {
     const finalType = selectedType || processedResult.type;
 
     if (finalType === "task") {
-      // Save tasks to Firestore
-      const tasks = processedResult.data.tasks || [processedResult.rawContent];
+      // Save tasks to Firestore - use edited tasks
+      const tasks = editedTasks.filter(t => t.trim());
+
+      if (tasks.length === 0) return;
 
       try {
         // Add each task to Firestore
@@ -417,16 +441,18 @@ export function UnifiedInputModal({ visible, mode = "text", onClose }) {
           await firestoreAddTask({ title });
         }
         queryClient.invalidateQueries({ queryKey: ["localTasks"] });
+        toast.success(tasks.length === 1 ? "Task added!" : `${tasks.length} tasks added!`);
         handleSuccess();
       } catch (error) {
         console.error("Error saving tasks:", error);
+        toast.error("Failed to save tasks");
       }
     } else {
-      // Save idea
+      // Save idea - use edited title and summary
       createIdeaMutation.mutate({
         content: processedResult.rawContent,
-        title: processedResult.data.title,
-        summary: processedResult.data.summary,
+        title: editedTitle.trim() || processedResult.data.title,
+        summary: editedSummary.trim() || processedResult.data.summary,
         category: selectedCategory || processedResult.data.category,
         tags: processedResult.data.tags,
         source_type: mode,
@@ -822,14 +848,23 @@ export function UnifiedInputModal({ visible, mode = "text", onClose }) {
                 {/* Title (for ideas) or Task list (for tasks) */}
                 {currentType === "idea" ? (
                   <>
-                    <Text
+                    <TextInput
+                      value={editedTitle}
+                      onChangeText={setEditedTitle}
                       style={[
                         theme.typography.title,
-                        { color: theme.colors.text.primary, textAlign: "center", marginBottom: theme.spacing.lg },
+                        {
+                          color: theme.colors.text.primary,
+                          textAlign: "center",
+                          marginBottom: theme.spacing.lg,
+                          width: "100%",
+                          paddingHorizontal: theme.spacing.sm,
+                        },
                       ]}
-                    >
-                      {processedResult.data.title}
-                    </Text>
+                      multiline
+                      placeholder="Enter title..."
+                      placeholderTextColor={theme.colors.text.muted}
+                    />
 
                     {/* Summary Card */}
                     <View
@@ -857,9 +892,20 @@ export function UnifiedInputModal({ visible, mode = "text", onClose }) {
                       >
                         SUMMARY
                       </Text>
-                      <Text style={[theme.typography.body, { color: theme.colors.text.primary }]}>
-                        {processedResult.data.summary}
-                      </Text>
+                      <TextInput
+                        value={editedSummary}
+                        onChangeText={setEditedSummary}
+                        style={[
+                          theme.typography.body,
+                          {
+                            color: theme.colors.text.primary,
+                            minHeight: 60,
+                          },
+                        ]}
+                        multiline
+                        placeholder="Enter summary..."
+                        placeholderTextColor={theme.colors.text.muted}
+                      />
                     </View>
 
                     {/* Tags */}
@@ -904,7 +950,7 @@ export function UnifiedInputModal({ visible, mode = "text", onClose }) {
                       {processedResult.data.tasks?.length === 1 ? "TASK" : `${processedResult.data.tasks?.length || 1} TASKS`}
                     </Text>
 
-                    {(processedResult.data.tasks || [processedResult.rawContent]).map((task, index) => (
+                    {editedTasks.map((task, index) => (
                       <View
                         key={index}
                         style={[
@@ -928,7 +974,17 @@ export function UnifiedInputModal({ visible, mode = "text", onClose }) {
                             marginRight: theme.spacing.md,
                           }}
                         />
-                        <Text style={[theme.typography.body, { color: theme.colors.text.primary, flex: 1 }]}>{task}</Text>
+                        <TextInput
+                          value={task}
+                          onChangeText={(text) => {
+                            const newTasks = [...editedTasks];
+                            newTasks[index] = text;
+                            setEditedTasks(newTasks);
+                          }}
+                          style={[theme.typography.body, { color: theme.colors.text.primary, flex: 1 }]}
+                          placeholder="Enter task..."
+                          placeholderTextColor={theme.colors.text.muted}
+                        />
                       </View>
                     ))}
                   </>

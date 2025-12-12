@@ -26,14 +26,16 @@ import {
   Plus,
   Sparkles,
   Link2,
+  Archive,
 } from "lucide-react-native";
 import { useTheme, categoryColors } from "@/contexts/ThemeContext";
 import { useQuery } from "@tanstack/react-query";
 import { categories } from "@/data/sampleData";
-import { getStoredIdeas, useUpdateIdea, useDeleteIdea } from "@/hooks/useCreateIdea";
+import { getStoredIdeas, useUpdateIdea, useDeleteIdea, useArchiveIdea } from "@/hooks/useCreateIdea";
 import { findSimilarIdeas } from "@/services/ai";
 import { AppText } from "@/components/primitives";
 import * as Haptics from "expo-haptics";
+import { toast } from "sonner-native";
 
 export default function IdeaDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -76,6 +78,12 @@ export default function IdeaDetailScreen() {
     try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (e) {}
   });
 
+  const archiveMutation = useArchiveIdea((result) => {
+    try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (e) {}
+    toast.success(result.archived ? "Idea archived" : "Idea unarchived");
+    router.back();
+  });
+
   useEffect(() => {
     if (idea) {
       setEditedTitle(idea.title || "");
@@ -104,7 +112,7 @@ export default function IdeaDetailScreen() {
   };
 
   const handleSave = async () => {
-    if (!localIdea) {
+    if (!idea) {
       // Can't edit sample ideas
       Alert.alert("Cannot Edit", "Sample ideas cannot be edited. Create your own idea to edit it!");
       return;
@@ -124,7 +132,7 @@ export default function IdeaDetailScreen() {
   };
 
   const handleDelete = () => {
-    if (!localIdea) {
+    if (!idea) {
       Alert.alert("Cannot Delete", "Sample ideas cannot be deleted.");
       return;
     }
@@ -155,6 +163,13 @@ export default function IdeaDetailScreen() {
     } catch (error) {
       Alert.alert("Error", "Failed to share idea");
     }
+  };
+
+  const handleArchive = () => {
+    if (!idea) return;
+
+    try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } catch (e) {}
+    archiveMutation.mutate({ id: idea.id, archived: !idea.archived });
   };
 
   const addTag = () => {
@@ -320,6 +335,22 @@ export default function IdeaDetailScreen() {
               ) : (
                 <Edit3 size={18} color="#FFFFFF" />
               )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={handleArchive}
+              disabled={archiveMutation.isPending}
+              style={{
+                width: theme.componentHeight.iconButton,
+                height: theme.componentHeight.iconButton,
+                borderRadius: theme.componentHeight.iconButton / 2,
+                backgroundColor: idea?.archived ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.2)",
+                alignItems: "center",
+                justifyContent: "center",
+                opacity: archiveMutation.isPending ? 0.5 : 1,
+              }}
+            >
+              <Archive size={18} color="#FFFFFF" />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -618,7 +649,7 @@ export default function IdeaDetailScreen() {
             <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.sm, marginBottom: theme.spacing.lg }}>
               <Sparkles size={18} color={theme.colors.accent.secondary} />
               <AppText variant="title" color="primary">
-                Similar Ideas
+                Related Ideas
               </AppText>
             </View>
 
@@ -626,7 +657,7 @@ export default function IdeaDetailScreen() {
               <View style={{ alignItems: "center", paddingVertical: theme.spacing.xl }}>
                 <ActivityIndicator size="small" color={theme.colors.accent.secondary} />
                 <AppText variant="caption" color="muted" style={{ marginTop: theme.spacing.sm }}>
-                  Finding related ideas...
+                  Finding connections...
                 </AppText>
               </View>
             ) : similarIdeas.length > 0 ? (
@@ -673,7 +704,7 @@ export default function IdeaDetailScreen() {
               </View>
             ) : (
               <AppText variant="subtitle" color="muted" style={{ textAlign: "center" }}>
-                No similar ideas found yet. Add more ideas to see connections!
+                No related ideas yet. Add more ideas to discover connections!
               </AppText>
             )}
           </View>

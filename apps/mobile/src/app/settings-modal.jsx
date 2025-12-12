@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   ScrollView,
@@ -6,6 +6,7 @@ import {
   Switch,
   Alert,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -28,11 +29,15 @@ import * as Haptics from "expo-haptics";
 import { toast } from "sonner-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEY } from "@/hooks/useCreateIdea";
+import Constants from "expo-constants";
 
 export default function SettingsModal() {
   const insets = useSafeAreaInsets();
   const { theme, isDark, toggleTheme } = useTheme();
   const { signOut, user } = useFirebaseAuth();
+  const [isClearingData, setIsClearingData] = useState(false);
+
+  const appVersion = Constants.expoConfig?.version || "1.0";
 
   const handleToggleTheme = () => {
     try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (e) {}
@@ -112,6 +117,7 @@ export default function SettingsModal() {
           title: "Clear All Data",
           subtitle: "Permanently delete all ideas",
           type: "danger",
+          loading: isClearingData,
           onPress: () =>
             Alert.alert(
               "Clear All Data",
@@ -122,11 +128,14 @@ export default function SettingsModal() {
                   text: "Delete",
                   style: "destructive",
                   onPress: async () => {
+                    setIsClearingData(true);
                     try {
                       await AsyncStorage.removeItem(STORAGE_KEY);
                       toast.success("All data cleared");
                     } catch (error) {
                       toast.error("Failed to clear data");
+                    } finally {
+                      setIsClearingData(false);
                     }
                   },
                 },
@@ -172,9 +181,10 @@ export default function SettingsModal() {
           marginBottom: theme.spacing.sm,
           flexDirection: "row",
           alignItems: "center",
+          opacity: item.loading ? 0.6 : 1,
         }}
         onPress={item.onPress}
-        disabled={item.type === "switch"}
+        disabled={item.type === "switch" || item.loading}
         activeOpacity={0.7}
       >
         <View
@@ -190,12 +200,16 @@ export default function SettingsModal() {
             marginRight: theme.spacing.md,
           }}
         >
-          <IconComponent
-            size={16}
-            color={
-              item.type === "danger" ? theme.colors.danger : theme.colors.accent.primary
-            }
-          />
+          {item.loading ? (
+            <ActivityIndicator size="small" color={theme.colors.danger} />
+          ) : (
+            <IconComponent
+              size={16}
+              color={
+                item.type === "danger" ? theme.colors.danger : theme.colors.accent.primary
+              }
+            />
+          )}
         </View>
 
         <View style={{ flex: 1 }}>
@@ -329,7 +343,7 @@ export default function SettingsModal() {
           }}
         >
           <AppText variant="caption" color="muted" style={{ fontSize: 11 }}>
-            Version 1.2
+            Version {appVersion}
           </AppText>
         </View>
       </ScrollView>
