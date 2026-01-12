@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   ScrollView,
@@ -6,6 +6,8 @@ import {
   Switch,
   Alert,
   Linking,
+  Share,
+  ActivityIndicator,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -20,7 +22,10 @@ import {
   Sparkles,
   LogOut,
   PlayCircle,
+  FileText,
 } from "lucide-react-native";
+import { useRouter } from "expo-router";
+import { exportUserData } from "@/services/firestore";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useFirebaseAuth } from "@/contexts/AuthContext";
 import { useTutorial } from "@/contexts/TutorialContext";
@@ -31,12 +36,80 @@ import { toast } from "sonner-native";
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { theme, isDark, toggleTheme } = useTheme();
-  const { signOut, user } = useFirebaseAuth();
+  const { signOut, deleteAccount, user } = useFirebaseAuth();
   const { resetTutorial } = useTutorial();
+  const router = useRouter();
+  const [exporting, setExporting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const handleToggleTheme = () => {
     try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (e) {}
     toggleTheme();
+  };
+
+  const handleExportData = async () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setExporting(true);
+      const data = await exportUserData();
+      const jsonString = JSON.stringify(data, null, 2);
+
+      await Share.share({
+        message: jsonString,
+        title: "SpillStack Data Export",
+      });
+
+      toast.success("Data exported successfully");
+    } catch (error) {
+      toast.error("Failed to export data");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Delete Account",
+      "Are you sure you want to permanently delete your account? This will delete all your ideas, tasks, and account data. This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete Account",
+          style: "destructive",
+          onPress: () => {
+            // Second confirmation
+            Alert.alert(
+              "Final Confirmation",
+              "This is your last chance. All data will be permanently deleted.",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Delete Forever",
+                  style: "destructive",
+                  onPress: async () => {
+                    try {
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                      setDeleting(true);
+                      const { error } = await deleteAccount();
+                      if (error) {
+                        toast.error(error);
+                        setDeleting(false);
+                      } else {
+                        toast.success("Account deleted");
+                        router.replace("/auth");
+                      }
+                    } catch (e) {
+                      toast.error("Failed to delete account");
+                      setDeleting(false);
+                    }
+                  },
+                },
+              ],
+            );
+          },
+        },
+      ],
+    );
   };
 
   const handleSignOut = () => {
@@ -95,22 +168,16 @@ export default function SettingsScreen() {
           title: "Export Data",
           subtitle: "Download all your ideas and tasks",
           type: "action",
-          onPress: () =>
-            Alert.alert(
-              "Coming Soon",
-              "Export feature will be available soon!",
-            ),
+          loading: exporting,
+          onPress: handleExportData,
         },
         {
           icon: Trash2,
-          title: "Clear All Data",
-          subtitle: "Permanently delete all ideas and tasks",
+          title: "Delete Account",
+          subtitle: "Permanently delete account and all data",
           type: "danger",
-          onPress: () =>
-            Alert.alert(
-              "Coming Soon",
-              "This feature will be available in a future update.",
-            ),
+          loading: deleting,
+          onPress: handleDeleteAccount,
         },
       ],
     },
@@ -136,6 +203,13 @@ export default function SettingsScreen() {
           onPress: () => Linking.openURL("https://spillstack.com/#contact"),
         },
         {
+          icon: FileText,
+          title: "Terms of Service",
+          subtitle: "Read our terms and conditions",
+          type: "navigation",
+          onPress: () => Linking.openURL("https://spillstack.com/terms"),
+        },
+        {
           icon: Shield,
           title: "Privacy Policy",
           subtitle: "Learn how we protect your data",
@@ -148,6 +222,7 @@ export default function SettingsScreen() {
 
   const renderSettingItem = (item, index) => {
     const IconComponent = item.icon;
+    const isLoading = item.loading;
 
     return (
       <TouchableOpacity
@@ -161,9 +236,10 @@ export default function SettingsScreen() {
           marginBottom: theme.spacing.md,
           flexDirection: "row",
           alignItems: "center",
+          opacity: isLoading ? 0.6 : 1,
         }}
         onPress={item.onPress}
-        disabled={item.type === "switch"}
+        disabled={item.type === "switch" || isLoading}
         activeOpacity={0.7}
       >
         <View
@@ -179,12 +255,19 @@ export default function SettingsScreen() {
             marginRight: theme.spacing.lg - 2,
           }}
         >
-          <IconComponent
-            size={20}
-            color={
-              item.type === "danger" ? theme.colors.danger : theme.colors.accent.primary
-            }
-          />
+          {isLoading ? (
+            <ActivityIndicator
+              size="small"
+              color={item.type === "danger" ? theme.colors.danger : theme.colors.accent.primary}
+            />
+          ) : (
+            <IconComponent
+              size={20}
+              color={
+                item.type === "danger" ? theme.colors.danger : theme.colors.accent.primary
+              }
+            />
+          )}
         </View>
 
         <View style={{ flex: 1 }}>
@@ -292,7 +375,7 @@ export default function SettingsScreen() {
             </AppText>
           </View>
           <AppText variant="caption" color="muted">
-            Version 1.0.0
+            Version 1.2
           </AppText>
         </View>
       </ScrollView>

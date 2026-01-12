@@ -132,3 +132,67 @@ export const subscribeToTasks = (callback) => {
     callback(tasks);
   });
 };
+
+// Export all user data
+export const exportUserData = async () => {
+  const user = auth.currentUser;
+  if (!user) throw new Error("User not authenticated");
+
+  const ideas = await getIdeas();
+  const tasks = await getTasks();
+
+  // Convert Firestore timestamps to ISO strings for export
+  const formatTimestamp = (ts) => {
+    if (!ts) return null;
+    if (ts.toDate) return ts.toDate().toISOString();
+    if (ts instanceof Date) return ts.toISOString();
+    return ts;
+  };
+
+  const exportData = {
+    exportedAt: new Date().toISOString(),
+    user: {
+      email: user.email,
+      uid: user.uid,
+    },
+    ideas: ideas.map((idea) => ({
+      ...idea,
+      createdAt: formatTimestamp(idea.createdAt),
+      updatedAt: formatTimestamp(idea.updatedAt),
+    })),
+    tasks: tasks.map((task) => ({
+      ...task,
+      createdAt: formatTimestamp(task.createdAt),
+      updatedAt: formatTimestamp(task.updatedAt),
+    })),
+  };
+
+  return exportData;
+};
+
+// Delete all user data (ideas and tasks)
+export const deleteAllUserData = async () => {
+  const user = auth.currentUser;
+  if (!user) throw new Error("User not authenticated");
+
+  // Delete all ideas
+  const ideasRef = collection(db, "users", user.uid, "ideas");
+  const ideasSnapshot = await getDocs(ideasRef);
+  const ideaDeletes = ideasSnapshot.docs.map((docSnap) =>
+    deleteDoc(doc(db, "users", user.uid, "ideas", docSnap.id))
+  );
+
+  // Delete all tasks
+  const tasksRef = collection(db, "users", user.uid, "tasks");
+  const tasksSnapshot = await getDocs(tasksRef);
+  const taskDeletes = tasksSnapshot.docs.map((docSnap) =>
+    deleteDoc(doc(db, "users", user.uid, "tasks", docSnap.id))
+  );
+
+  // Delete user document
+  const userDocRef = doc(db, "users", user.uid);
+
+  await Promise.all([...ideaDeletes, ...taskDeletes, deleteDoc(userDocRef)]);
+
+  return { ideasDeleted: ideasSnapshot.size, tasksDeleted: tasksSnapshot.size };
+};

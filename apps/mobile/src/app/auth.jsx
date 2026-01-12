@@ -9,6 +9,7 @@ import {
   Platform,
   ActivityIndicator,
   Image,
+  Linking,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -328,6 +329,24 @@ export default function AuthScreen() {
                   </Text>
                 </Text>
               </TouchableOpacity>
+
+              {/* Legal disclaimer */}
+              <Text style={styles.legalText}>
+                By continuing, you agree to our{" "}
+                <Text
+                  style={styles.legalLink}
+                  onPress={() => Linking.openURL("https://spillstack.com/terms")}
+                >
+                  Terms of Service
+                </Text>
+                {" "}and{" "}
+                <Text
+                  style={styles.legalLink}
+                  onPress={() => Linking.openURL("https://spillstack.com/privacy")}
+                >
+                  Privacy Policy
+                </Text>
+              </Text>
             </View>
           </View>
         </KeyboardAvoidingView>
@@ -451,5 +470,17 @@ const styles = StyleSheet.create({
     color: "#B7C0D8",
     fontSize: 14,
     flex: 1,
+  },
+  legalText: {
+    color: "#818BA3",
+    fontSize: 11,
+    textAlign: "center",
+    lineHeight: 16,
+    marginTop: 20,
+    paddingHorizontal: 16,
+  },
+  legalLink: {
+    color: "#4F7DFF",
+    textDecorationLine: "underline",
   },
 });

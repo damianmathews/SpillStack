@@ -131,16 +131,16 @@ const AnimatedTaskItem = memo(function AnimatedTaskItem({
         <TouchableOpacity
           onPress={() => !isTutorialSample && onToggle(task.id)}
           style={{ marginRight: theme.spacing.md }}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           disabled={isRemoving || isTutorialSample}
         >
           {isChecked ? (
             <Animated.View
               style={[
                 {
-                  width: 18,
-                  height: 18,
-                  borderRadius: 4,
+                  width: 22,
+                  height: 22,
+                  borderRadius: 5,
                   backgroundColor: theme.colors.accent.primary,
                   alignItems: "center",
                   justifyContent: "center",
@@ -148,14 +148,14 @@ const AnimatedTaskItem = memo(function AnimatedTaskItem({
                 checkmarkStyle,
               ]}
             >
-              <Check size={12} color="#FFFFFF" strokeWidth={3} />
+              <Check size={14} color="#FFFFFF" strokeWidth={3} />
             </Animated.View>
           ) : (
             <View
               style={{
-                width: 18,
-                height: 18,
-                borderRadius: 4,
+                width: 22,
+                height: 22,
+                borderRadius: 5,
                 borderWidth: 1.5,
                 borderColor: isTutorialSample ? theme.colors.accent.primary + "60" : theme.colors.text.muted,
               }}

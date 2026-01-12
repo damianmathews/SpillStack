@@ -396,6 +396,82 @@ exports.sendMarketingEmail = onCall(
   }
 );
 
+// Delete user account and all associated data
+exports.deleteUserAccount = onCall(
+  {
+    secrets: [resendApiKey],
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be authenticated");
+    }
+
+    const userId = request.auth.uid;
+    const userEmail = request.auth.token.email;
+    const db = admin.firestore();
+
+    try {
+      // Delete all user's ideas
+      const ideasRef = db.collection("users").doc(userId).collection("ideas");
+      const ideasSnapshot = await ideasRef.get();
+      const ideaDeletes = ideasSnapshot.docs.map((doc) => doc.ref.delete());
+
+      // Delete all user's tasks
+      const tasksRef = db.collection("users").doc(userId).collection("tasks");
+      const tasksSnapshot = await tasksRef.get();
+      const taskDeletes = tasksSnapshot.docs.map((doc) => doc.ref.delete());
+
+      // Delete verification codes if any
+      const verificationRef = db.collection("verificationCodes").doc(userId);
+
+      // Delete user document
+      const userDocRef = db.collection("users").doc(userId);
+
+      await Promise.all([
+        ...ideaDeletes,
+        ...taskDeletes,
+        verificationRef.delete(),
+        userDocRef.delete(),
+      ]);
+
+      // Delete Firebase Auth user
+      await admin.auth().deleteUser(userId);
+
+      console.log("User account deleted:", userId);
+
+      // Send confirmation email if we have their email
+      if (userEmail) {
+        const resend = new Resend(resendApiKey.value());
+        try {
+          await resend.emails.send({
+            from: "SpillStack <hello@spillstack.com>",
+            to: userEmail,
+            subject: "Your SpillStack account has been deleted",
+            html: emailTemplate(`
+              <h1 style="color: #F4F6FF; font-size: 24px; margin: 0 0 16px 0; font-weight: 700;">
+                Account Deleted
+              </h1>
+              <p style="color: #B7C0D8; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">
+                Your SpillStack account and all associated data have been permanently deleted as requested.
+              </p>
+              <p style="color: #818BA3; font-size: 14px; margin: 0;">
+                We're sorry to see you go. If you ever want to come back, you're always welcome to create a new account.
+              </p>
+            `),
+          });
+        } catch (emailError) {
+          console.error("Failed to send deletion confirmation email:", emailError);
+        }
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error("Failed to delete user account:", error);
+      throw new HttpsError("internal", "Failed to delete account. Please try again.");
+    }
+  }
+);
+
 // Manual email sending (callable function)
 exports.sendEmail = onCall(
   {

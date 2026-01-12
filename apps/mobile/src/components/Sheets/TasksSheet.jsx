@@ -140,27 +140,27 @@ export function TasksSheet({ visible, onClose }) {
       <TouchableOpacity
         onPress={() => toggleTask(task.id)}
         style={{ marginRight: theme.spacing.md }}
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
       >
         {task.completed ? (
           <View
             style={{
-              width: 18,
-              height: 18,
-              borderRadius: 4,
+              width: 22,
+              height: 22,
+              borderRadius: 5,
               backgroundColor: theme.colors.accent.primary,
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <Check size={12} color="#FFFFFF" strokeWidth={3} />
+            <Check size={14} color="#FFFFFF" strokeWidth={3} />
           </View>
         ) : (
           <View
             style={{
-              width: 18,
-              height: 18,
-              borderRadius: 4,
+              width: 22,
+              height: 22,
+              borderRadius: 5,
               borderWidth: 1.5,
               borderColor: theme.colors.text.muted,
             }}
@@ -189,7 +189,7 @@ export function TasksSheet({ visible, onClose }) {
       <TouchableOpacity
         onPress={() => deleteTask(task.id)}
         style={{ padding: theme.spacing.xs }}
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
       >
         <Trash2 size={16} color={theme.colors.text.muted} />
       </TouchableOpacity>

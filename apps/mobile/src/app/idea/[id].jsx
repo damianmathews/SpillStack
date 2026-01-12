@@ -169,7 +169,25 @@ export default function IdeaDetailScreen() {
     if (!idea) return;
 
     try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } catch (e) {}
-    archiveMutation.mutate({ id: idea.id, archived: !idea.archived });
+
+    // If already archived, unarchive without confirmation
+    if (idea.archived) {
+      archiveMutation.mutate({ id: idea.id, archived: false });
+      return;
+    }
+
+    // Confirm before archiving
+    Alert.alert(
+      "Archive Idea",
+      "Move this idea to your archive? You can restore it anytime from the archived section.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Archive",
+          onPress: () => archiveMutation.mutate({ id: idea.id, archived: true }),
+        },
+      ]
+    );
   };
 
   const addTag = () => {

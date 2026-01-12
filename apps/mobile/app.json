@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "SpillStack",
-    "version": "1.2",
+    "version": "1.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "automatic",
@@ -10,6 +10,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "xyz.create.spillstack",
+      "icon": {
+        "light": "./assets/images/icon-light.png",
+        "dark": "./assets/images/icon-dark.png",
+        "tinted": "./assets/images/icon-tinted.png"
+      },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSMicrophoneUsageDescription": "SpillStack needs microphone access to capture voice ideas",
@@ -82,7 +87,7 @@
         "projectId": "57bc8e03-7090-4f37-9003-cfc6f96acc7c"
       }
     },
-    "runtimeVersion": "1.0.0",
+    "runtimeVersion": "1.3.0",
     "owner": "thedamester"
   }
 }

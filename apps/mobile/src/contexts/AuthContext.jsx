@@ -28,7 +28,7 @@ GoogleSignin.configure({
 const AuthContext = createContext({});
 
 // Helper to create/update user document in Firestore
-const createUserDocument = async (user, isNewUser = false, marketingOptIn = false) => {
+const createUserDocument = async (user, isNewUser = false, marketingOptIn = false, isOAuthUser = false) => {
   if (!user) return;
 
   const userRef = doc(db, "users", user.uid);
@@ -41,12 +41,18 @@ const createUserDocument = async (user, isNewUser = false, marketingOptIn = fals
       displayName: user.displayName || null,
       photoURL: user.photoURL || null,
       marketingOptIn: marketingOptIn,
+      // OAuth users (Google/Apple) are already email-verified by their provider
+      emailVerified: isOAuthUser ? true : false,
       createdAt: serverTimestamp(),
       lastLoginAt: serverTimestamp(),
     });
-  } else if (!isNewUser) {
-    // Update last login for existing users
-    await setDoc(userRef, { lastLoginAt: serverTimestamp() }, { merge: true });
+  } else {
+    // For existing users, update last login and ensure OAuth users are marked as verified
+    const updates = { lastLoginAt: serverTimestamp() };
+    if (isOAuthUser && !userSnap.data().emailVerified) {
+      updates.emailVerified = true;
+    }
+    await setDoc(userRef, updates, { merge: true });
   }
 };
 
@@ -174,6 +180,24 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // Delete account and all data
+  const deleteAccount = async () => {
+    try {
+      const deleteUserAccount = httpsCallable(functions, "deleteUserAccount");
+      await deleteUserAccount();
+      // Sign out from Google if signed in
+      try {
+        await GoogleSignin.signOut();
+      } catch (e) {
+        // Ignore if not signed in with Google
+      }
+      return { error: null };
+    } catch (error) {
+      console.error("Failed to delete account:", error);
+      return { error: error.message || "Failed to delete account" };
+    }
+  };
+
   const signInWithGoogle = async () => {
     try {
       // Check if Google Play Services are available (always true on iOS)
@@ -196,7 +220,8 @@ export function AuthProvider({ children }) {
       const result = await signInWithCredential(auth, googleCredential);
 
       // Create user document if new (triggers welcome email for new users)
-      await createUserDocument(result.user);
+      // Pass isOAuthUser=true to mark email as verified (Google already verified it)
+      await createUserDocument(result.user, false, false, true);
 
       return { user: result.user, error: null };
     } catch (error) {
@@ -234,7 +259,8 @@ export function AuthProvider({ children }) {
       const result = await signInWithCredential(auth, oauthCredential);
 
       // Create user document if new (triggers welcome email for new users)
-      await createUserDocument(result.user);
+      // Pass isOAuthUser=true to mark email as verified (Apple already verified it)
+      await createUserDocument(result.user, false, false, true);
 
       return { user: result.user, error: null };
     } catch (error) {
@@ -252,6 +278,7 @@ export function AuthProvider({ children }) {
     signIn,
     signUp,
     signOut,
+    deleteAccount,
     signInWithGoogle,
     signInWithApple,
     resendVerificationEmail,

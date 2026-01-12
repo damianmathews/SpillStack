@@ -16,15 +16,15 @@ export function QuickInputButtons({ onVoice, onText }) {
   return (
     <View
       style={{
-        marginHorizontal: 20,
-        marginTop: 8,
-        marginBottom: 4,
+        marginHorizontal: theme.spacing.xl,
+        marginTop: theme.spacing.sm,
+        marginBottom: theme.spacing.xs,
         backgroundColor: theme.colors.surface.level1,
         borderRadius: theme.radius.lg,
         borderWidth: 1,
         borderColor: theme.colors.border.subtle,
-        paddingVertical: 12,
-        paddingHorizontal: 16,
+        paddingVertical: theme.spacing.md,
+        paddingHorizontal: theme.spacing.lg,
         alignItems: "center",
       }}
     >
@@ -34,14 +34,14 @@ export function QuickInputButtons({ onVoice, onText }) {
           fontSize: 13,
           fontWeight: "400",
           color: theme.colors.text.muted,
-          marginBottom: 10,
+          marginBottom: theme.spacing.sm,
         }}
       >
         What's on your mind?
       </AppText>
 
       {/* Buttons Row - centered */}
-      <View style={{ flexDirection: "row", gap: 24 }}>
+      <View style={{ flexDirection: "row", gap: theme.spacing.xl }}>
         <TouchableOpacity
           style={{
             width: 55,
